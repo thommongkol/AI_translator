@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>ตัวแปลไฟล์ .txt จำนวนมาก (ล็อกโครงสร้าง 1:1) — Modern UI</title>
+<title>ตัวแปลไฟล์ .txt (Gemini) — v9 Final</title>
 <!-- Add Font Awesome for Icons -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
@@ -55,7 +55,7 @@
 
   .filelist{max-height:240px; overflow:auto; border:1px solid var(--line); border-radius:12px; margin-top: 16px;}
   .fileitem{
-    display: grid; grid-template-columns:1fr auto auto; gap:12px; padding:10px 14px;
+    display: grid; grid-template-columns:1fr auto; gap:12px; padding:10px 14px;
     border-bottom:1px solid #2b3546; align-items:center; transition: background-color .2s; cursor: pointer;
   }
   .fileitem:last-child{border-bottom:0}
@@ -81,8 +81,7 @@
   .lineNo{padding:6px 8px;border-right:1px solid #2b3546;color:#9ca3af;text-align:right;white-space:nowrap}
   .cell div[contenteditable]{padding:6px 12px;min-height:30px;outline:none;white-space:pre;overflow:auto}
   .fixed .cell div[contenteditable]{line-height:1.6;height:1.6em;overflow-y:hidden;overflow-x:auto}
-  
-  .controls{display:flex; gap:12px; align-items:center; justify-content:space-between; margin-top:16px;}
+
   .help{font-size:13px;color:var(--muted); margin-top: 16px;}
   .tag{font-size:14px;color:#9ca3af; font-weight: 400;}
   .ok{color:var(--ok)} .err{color:var(--err)}
@@ -93,18 +92,18 @@
 <body>
 <div class="wrap">
   <header>
-    <h1><i class="fa-solid fa-language" style="color:var(--accent)"></i> ตัวแปลไฟล์ .txt จำนวนมาก <span class="tag">v8.1 Final</span></h1>
+    <h1><i class="fa-solid fa-language" style="color:var(--accent)"></i> ตัวแปลไฟล์ .txt จำนวนมาก <span class="tag">v9 Final</span></h1>
     <p class="muted">แปลไฟล์ข้อความโดยยังคงโครงสร้างเดิมแบบบรรทัดต่อบรรทัด (1:1) ขับเคลื่อนโดย Gemini</p>
   </header>
 
   <div class="card">
-    <h2><i class="fa-solid fa-sliders"></i>1. การตั้งค่า (Configuration)</h2>
+    <h2><i class="fa-solid fa-sliders"></i>1. การตั้งค่า</h2>
     <div class="grid-cols-3">
       <div>
         <label for="apiKey">Gemini API Key</label>
         <input id="apiKey" type="password" placeholder="กรอก API Key ของคุณที่นี่">
       </div>
-      <button class="secondary" id="checkKeyBtn"><i class="fa-solid fa-check-circle"></i>ตรวจสอบ API Key</button>
+      <button class="secondary" id="checkKeyBtn"><i class="fa-solid fa-check-circle"></i>ตรวจสอบ Key</button>
       <div id="checkKeyResult" class="muted" style="min-width:140px"></div>
     </div>
     <div class="grid-cols-2" style="margin-top:16px">
@@ -126,7 +125,7 @@
   </div>
 
   <div class="card">
-    <h2><i class="fa-solid fa-file-lines"></i>2. จัดการไฟล์ (File Management)</h2>
+    <h2><i class="fa-solid fa-file-lines"></i>2. จัดการไฟล์</h2>
     <div class="grid-cols-2">
         <div class="grid-cols-2">
             <div>
@@ -151,7 +150,7 @@
   </div>
 
   <div id="editor-section" class="card hidden">
-    <h2><i class="fa-solid fa-pen-to-square"></i>3. แก้ไขและดาวน์โหลด (Edit & Download)</h2>
+    <h2><i class="fa-solid fa-pen-to-square"></i>3. แก้ไขและดาวน์โหลด</h2>
     <div class="toolbar">
       <label><input type="checkbox" id="syncScroll" checked> ซิงค์การเลื่อน</label>
       <label><input type="checkbox" id="fixedRows" checked> ความสูงบรรทัดคงที่</label>
@@ -176,14 +175,9 @@
 
 </div>
 
-<!-- Load Libraries from reliable CDNs -->
-<script src="https://cdn.jsdelivr.net/npm/@google/generative-ai/dist/main.iife.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-
-<!-- Main Application Script -->
-<script>
-  // Access the library from the global scope
-  const { GoogleGenerativeAI } = google.generativeai;
+<script type="module">
+  import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+  import JSZip from "https://esm.run/jszip";
 
   const els = {
     apiKey: document.getElementById('apiKey'),
@@ -228,80 +222,70 @@
   function renderFileList(){
     els.filelist.innerHTML = "";
     if (!filesState.length){
-      els.filelist.innerHTML = '<div class="fileitem"><div class="fileitem-name"><span>ยังไม่มีไฟล์</span><span class="meta">กด "เพิ่มไฟล์" เพื่อเริ่มต้น</span></div></div>';
-      els.openSelected.disabled = true; els.downloadRight.disabled = true; selectedIndex = -1;
-      return;
+      els.filelist.innerHTML = '<div class="fileitem" style="cursor:default;"><div class="fileitem-name"><span>ยังไม่มีไฟล์</span><span class="meta">กด "เพิ่มไฟล์" เพื่อเริ่มต้น</span></div></div>';
+    } else {
+        filesState.forEach((f, idx) => {
+        const row = document.createElement('div');
+        row.className = 'fileitem';
+        if (idx === selectedIndex) {
+            row.classList.add('selected');
+        }
+
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'fileitem-name';
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'name';
+        nameSpan.textContent = f.name;
+
+        const metaSpan = document.createElement('span');
+        metaSpan.className = 'meta';
+        const meta = `(${(f.size/1024).toFixed(1)} KB)`;
+        const stat = f.translatedLines ? ' — ✅ แปลแล้ว' : (f.lines ? ` — ${f.lines.length} บรรทัด` : '');
+        metaSpan.textContent = `${meta}${stat}`;
+
+        nameDiv.appendChild(nameSpan);
+        nameDiv.appendChild(metaSpan);
+
+        const rm = document.createElement('button');
+        rm.className = 'secondary';
+        rm.innerHTML = '<i class="fa-solid fa-times"></i>';
+        rm.style.padding = '8px 12px';
+        rm.addEventListener('click', (e) => {
+            e.stopPropagation();
+            filesState.splice(idx,1);
+            if (selectedIndex === idx) {
+                selectedIndex = -1;
+                els.editorSection.classList.add('hidden');
+            } else if (selectedIndex > idx) {
+                selectedIndex--;
+            }
+            renderFileList();
+        });
+
+        row.appendChild(nameDiv);
+        row.appendChild(rm);
+        els.filelist.appendChild(row);
+
+        row.addEventListener('click', () => {
+            selectedIndex = idx;
+            renderFileList();
+            if (filesState[idx].translatedLines) {
+                els.openSelected.click();
+            } else {
+                els.editorSection.classList.add('hidden');
+            }
+        });
+      });
     }
-    filesState.forEach((f, idx) => {
-      const row = document.createElement('div');
-      row.className = 'fileitem';
-      if (idx === selectedIndex) {
-        row.classList.add('selected');
-      }
-
-      const nameDiv = document.createElement('div');
-      nameDiv.className = 'fileitem-name';
-
-      const nameSpan = document.createElement('span');
-      nameSpan.className = 'name';
-      nameSpan.textContent = f.name;
-      
-      const metaSpan = document.createElement('span');
-      metaSpan.className = 'meta';
-      const meta = `(${(f.size/1024).toFixed(1)} KB)`;
-      const stat = f.translatedLines ? ' — ✅ แปลแล้ว' : (f.lines ? ` — ${f.lines.length} บรรทัด` : '');
-      metaSpan.textContent = `${meta}${stat}`;
-
-      nameDiv.appendChild(nameSpan);
-      nameDiv.appendChild(metaSpan);
-
-      const radio = document.createElement('input');
-      radio.type = 'radio'; radio.name = 'selFile'; radio.value = idx;
-      radio.style.display = 'none'; // Hide radio, click row instead
-
-      const rm = document.createElement('button');
-      rm.className = 'secondary';
-      rm.innerHTML = '<i class="fa-solid fa-times"></i>';
-      rm.style.padding = '8px 12px';
-      rm.addEventListener('click', (e) => {
-        e.stopPropagation(); // prevent row click
-        filesState.splice(idx,1);
-        if (selectedIndex === idx) {
-            selectedIndex = -1;
-            els.editorSection.classList.add('hidden');
-        } else if (selectedIndex > idx) {
-            selectedIndex--;
-        }
-        renderFileList();
-      });
-
-      row.appendChild(nameDiv);
-      row.appendChild(radio);
-      row.appendChild(rm);
-      els.filelist.appendChild(row);
-
-      row.addEventListener('click', () => {
-        selectedIndex = idx;
-        renderFileList(); // Re-render to show selection
-        els.downloadZipAll.disabled = filesState.every(x=>!x.translatedLines);
-        if (filesState[idx].translatedLines) {
-            els.openSelected.disabled = false;
-            els.downloadRight.disabled = false;
-            els.openSelected.click();
-        } else {
-            els.openSelected.disabled = true;
-            els.downloadRight.disabled = true;
-            els.editorSection.classList.add('hidden');
-        }
-      });
-    });
-    // Final check for buttons
-    els.openSelected.disabled = selectedIndex === -1 || !filesState[selectedIndex]?.translatedLines;
-    els.downloadRight.disabled = selectedIndex === -1 || !filesState[selectedIndex]?.translatedLines;
-    els.downloadZipAll.disabled = filesState.every(x=>!x.translatedLines);
+    // Update button states after rendering
+    const hasSelection = selectedIndex !== -1 && filesState[selectedIndex];
+    const isSelectionTranslated = hasSelection && filesState[selectedIndex].translatedLines;
+    els.openSelected.disabled = !isSelectionTranslated;
+    els.downloadRight.disabled = !isSelectionTranslated;
+    els.downloadZipAll.disabled = filesState.every(x => !x.translatedLines);
   }
 
-  // --- robust decoding ---
   async function readFileDecoded(file){
     const buf = await file.arrayBuffer();
     const bytes = new Uint8Array(buf);
@@ -316,21 +300,14 @@
     return text;
   }
 
-  // Strong newline splitter (covers CRLF/CR/LF + VT/FF/NEL/LS/PS)
   function splitLinesStrong(text){
     let s = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
     s = s.replace(/[\u000B\u000C\u0085\u2028\u2029]/g, "\n");
-    let lines = s.split("\n");
-    if (lines.length === 1 && /\n/.test(s)){
-      lines = s.match(/[^\n]*\n|[^\n]+$/g) || [s];
-      lines = lines.map(x=>x.endsWith("\n")?x.slice(0,-1):x);
-    }
-    return lines;
+    return s.split("\n");
   }
   function fromLines(lines){ return lines.join("\n"); }
 
-  function pickFiles(){ els.picker.click(); }
-  els.pickBtn.addEventListener('click', pickFiles);
+  els.pickBtn.addEventListener('click', () => els.picker.click());
   els.picker.addEventListener('change', e => {
     const list = Array.from(e.target.files || []);
     if (!list.length){ return; }
@@ -341,31 +318,19 @@
   });
 
   els.clearFiles.addEventListener('click', () => {
-    filesState = []; selectedIndex = -1; renderFileList(); clearLog();
+    filesState = [];
+    selectedIndex = -1;
+    renderFileList();
+    clearLog();
     els.editorSection.classList.add('hidden');
   });
 
-  // Scroll sync
-  (function attachScrollSync(){
-    const L = els.gridLeft, R = els.gridRight;
-    let lock = false;
-    function sync(a,b){
-      if (!els.syncScroll.checked) return;
-      if (lock) return;
-      lock = true; b.scrollTop = a.scrollTop; b.scrollLeft = a.scrollLeft; lock = false;
-    }
-    L.addEventListener('scroll', ()=>sync(L,R));
-    R.addEventListener('scroll', ()=>sync(R,L));
-  })();
-
-  // Fixed row height toggle
   function applyFixedRows(){
     const on = els.fixedRows.checked;
     [els.tableLeft, els.tableRight].forEach(t => { t.classList.toggle('fixed', on); });
   }
   els.fixedRows.addEventListener('change', applyFixedRows);
 
-  // Build editor tables using source line count
   function buildTables(srcLines, dstLines){
     const n = srcLines.length;
     const paddedDst = dstLines.slice(0, n);
@@ -388,7 +353,6 @@
       rdiv.setAttribute('contenteditable','true');
       rcell.appendChild(rdiv); rrow.appendChild(rno); rrow.appendChild(rcell); els.tableRight.appendChild(rrow);
     }
-    // Show the editor section
     els.editorSection.classList.remove('hidden');
     applyFixedRows();
   }
@@ -398,7 +362,6 @@
     return Array.from(nodes).map(n=>n.textContent ?? "");
   }
 
-  // Gemini client + key check
   function makeClient(){
     const key = els.apiKey.value.trim();
     if (!key){ throw new Error("กรุณาใส่ Gemini API Key"); }
@@ -428,14 +391,151 @@
     }
   });
 
-  const SYSTEM_RULES = `You are a line-locked translation tool.
-- Input is JSON {"lines":[...]} where each item is a line from the source file.
-- You must respond with JSON only, e.g., {"lines":["...", "..."]}.
-- The number of items in "lines" must always match the input (1:1).
-- Preserve blank lines: if an input line is empty, return an empty string "" at the same position.
-- Do not merge/split lines, and do not add line numbers or descriptions.
-- Do not use code blocks or any text outside the JSON.
-- Keep placeholders like {name}, <tag>, %s, {0} as they are.
+  const SYSTEM_RULES = `You are a line-locked translation tool. You must follow these rules strictly:
+- Input is a JSON object: {"lines":[...]} where each item is a line from the source file.
+- You must respond with a valid JSON object ONLY, matching this schema: {"lines":["...", "..."]}.
+- The number of items in the output "lines" array MUST be exactly the same as the input "lines" array (1:1 mapping).
+- Preserve blank lines: if an input line is an empty string, you MUST return an empty string at the same position in the output array.
+- Do not merge lines. Do not split lines.
+- Do not add line numbers, explanations, or any text outside of the JSON object. Do not use Markdown code blocks.
+- Keep placeholders like {name}, <tag>, %s, {0} exactly as they are in the translated text.
 `;
 
-  async function translateC
+  async function translateChunk(model, chunk, src, tgt, retries){
+    const prompt = `${SYSTEM_RULES}
+Translate the text lines from ${src} to ${tgt} for the following JSON input:
+${JSON.stringify({lines: chunk})}`;
+    for (let attempt=0; attempt<=retries; attempt++){
+      try{
+        const result = await model.generateContent(prompt);
+        let raw = result.response.text();
+        let obj = null;
+        try{ obj = JSON.parse(raw); }
+        catch(e){
+          const m = raw.match(/\{[\s\S]*\}/);
+          if (m){ obj = JSON.parse(m[0]); } else { throw e; }
+        }
+        if (!obj || !Array.isArray(obj.lines)) throw new Error("API returned invalid JSON structure");
+        const out = obj.lines.map(v => (typeof v === "string" ? v : String(v)));
+        if (out.length !== chunk.length) throw new Error(`API returned length mismatch: ${out.length} vs ${chunk.length}`);
+        return out;
+      }catch(err){
+        log(`  - Attempt ${attempt+1} failed: ${err.message}`);
+        if (attempt === retries){ return chunk.map(()=> `[Translation Failed]`); }
+        await new Promise(r=>setTimeout(r, 1000*(attempt+1)));
+      }
+    }
+    return chunk.map(() => `[Translation Failed]`);
+  }
+
+  async function translateFile(model, fileObj, src, tgt, batchSize, retries){
+    if (!fileObj.lines){
+      const text = await readFileDecoded(fileObj.file);
+      fileObj.lines = splitLinesStrong(text);
+      log(`อ่านไฟล์ ${fileObj.name} ได้ ${fileObj.lines.length} บรรทัด`);
+    }
+    const lines = fileObj.lines;
+    const out = new Array(lines.length);
+    for (let i=0;i<lines.length;i+=batchSize){
+      const chunk = lines.slice(i, i+batchSize);
+      log(`• ${fileObj.name}: แปลบรรทัด ${i+1}-${Math.min(i+chunk.length, lines.length)}...`);
+      const got = await translateChunk(model, chunk, src, tgt, retries);
+      for (let k=0;k<chunk.length;k++){ out[i+k] = got[k] ?? ""; }
+    }
+    return out;
+  }
+
+  els.translateBtn.addEventListener('click', async ()=>{
+    if (filesState.length===0) return alert("ยังไม่มีไฟล์ให้แปล");
+    clearLog();
+    try {
+      const src = els.srcLang.value.trim() || "auto";
+      const tgt = els.tgtLang.value.trim() || "Thai";
+      const batchSize = Math.max(1, parseInt(els.batch.value||"50",10));
+      const retries = Math.max(0, parseInt(els.retries.value||"2",10));
+      const {model, modelName} = makeClient();
+      log(`ใช้โมเดล: ${modelName}`);
+      let translatedCount = 0;
+      for (const f of filesState){
+        if(f.translatedLines) continue;
+        log(`\nเริ่มแปล: ${f.name}`);
+        const translated = await translateFile(model, f, src, tgt, batchSize, retries);
+        f.translatedLines = translated;
+        translatedCount++;
+        log(`✔ เสร็จสิ้น: ${f.name}`);
+        renderFileList();
+      }
+      if (translatedCount > 0) {
+        alert(`แปลเสร็จแล้ว ${translatedCount} ไฟล์ — คลิกเลือกไฟล์ในรายการเพื่อเปิดแก้ไข หรือดาวน์โหลดทั้งหมดเป็น ZIP`);
+      } else {
+        alert('ทุกไฟล์ในรายการได้รับการแปลเรียบร้อยแล้ว');
+      }
+    } catch(e) {
+      console.error(e);
+      log("เกิดข้อผิดพลาดร้ายแรง: " + (e.message || e));
+      alert("เกิดข้อผิดพลาดร้ายแรง:\n" + (e.message || e) + "\n\nโปรดตรวจสอบ API Key และชื่อ Model");
+    }
+  });
+
+  els.openSelected.addEventListener('click', ()=>{
+    if (selectedIndex < 0) return;
+    const f = filesState[selectedIndex];
+    if (!f || !f.lines || !f.translatedLines) return;
+    buildTables(f.lines, f.translatedLines);
+  });
+
+  els.downloadRight.addEventListener('click', ()=>{
+    if (selectedIndex < 0) return;
+    const f = filesState[selectedIndex];
+    if (!f || !f.translatedLines) return;
+    f.translatedLines = getRightLinesFromDOM(); // Save latest edits
+    const blob = new Blob([fromLines(f.translatedLines)], {type:"text/plain;charset=utf-8"});
+    const a = document.createElement('a');
+    const name = f.name.replace(/\.txt$/i,'') + `.${els.tgtLang.value}.txt`;
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+  });
+
+  function safeName(name){ return name.replace(/[\\/:*?"<>|]/g, '_'); }
+
+  els.downloadZipAll.addEventListener('click', async ()=>{
+    if (filesState.every(x=>!x.translatedLines)) return;
+    const zip = new JSZip();
+    if(selectedIndex !== -1 && filesState[selectedIndex]?.translatedLines) {
+      filesState[selectedIndex].translatedLines = getRightLinesFromDOM();
+    }
+    for (const f of filesState){
+      if (f.translatedLines){
+        const blob = new Blob([fromLines(f.translatedLines)], {type:"text/plain;charset=utf-8"});
+        const name = f.name.replace(/\.txt$/i,'') + `.${els.tgtLang.value}.txt`;
+        zip.file(safeName(name), blob);
+      }
+    }
+    const content = await zip.generateAsync({type:"blob"});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(content);
+    a.download = "translated_files.zip";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+  });
+  
+  (function attachScrollSync(){
+    const L = els.gridLeft, R = els.gridRight;
+    let lock = false;
+    function sync(a,b){
+      if (!els.syncScroll.checked) return;
+      if (lock) return;
+      lock = true; b.scrollTop = a.scrollTop; b.scrollLeft = a.scrollLeft; lock = false;
+    }
+    L.addEventListener('scroll', ()=>sync(L,R));
+    R.addEventListener('scroll', ()=>sync(R,L));
+  })();
+
+  // Initial render on page load
+  renderFileList();
+
+</script>
+</body>
+</html>
