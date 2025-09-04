@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เครื่องมือแยกและรวมไฟล์ข้อความสำหรับไฟล์ขนาดใหญ่</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .container {
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+            width: 90%;
+            max-width: 1000px;
+            overflow: hidden;
+            padding: 30px;
+            margin: 20px 0;
+            backdrop-filter: blur(5px);
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            background: linear-gradient(90deg, #3498db, #9b59b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+            margin-top: 10px;
+        }
+        
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+        }
+        
+        .section {
+            flex: 1;
+            min-width: 300px;
+            background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.4s ease;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .section:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #3498db;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3498db;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        input[type="file"], input[type="number"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s;
+            background-color: #fff;
+        }
+        
+        input[type="file"] {
+            cursor: pointer;
+        }
+        
+        input:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+        
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(to right, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);
+        }
+        
+        button:hover {
+            background: linear-gradient(to right, #2980b9, #2575fc);
+            transform: translateY(-3px);
+            box-shadow: 0 7px 15px rgba(0, 0, 0, 0.15);
+        }
+        
+        button:active {
+            transform: translateY(1px);
+        }
+        
+        .merge-btn {
+            background: linear-gradient(to right, #2ecc71, #27ae60);
+            box-shadow: 0 4px 10px rgba(46, 204, 113, 0.3);
+        }
+        
+        .merge-btn:hover {
+            background: linear-gradient(to right, #27ae60, #219653);
+        }
+        
+        .download-btn {
+            background: linear-gradient(to right, #9b59b6, #8e44ad);
+            margin-top: 15px;
+            box-shadow: 0 4px 10px rgba(155, 89, 182, 0.3);
+        }
+        
+        .download-btn:hover {
+            background: linear-gradient(to right, #8e44ad, #7d3c98);
+        }
+        
+        .instructions {
+            background: #e8f4fc;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            border-radius: 0 8px 8px 0;
+            margin-top: 25px;
+            transition: all 0.3s;
+        }
+        
+        .instructions:hover {
+            transform: translateX(5px);
+        }
+        
+        .instructions h3 {
+            color: #3498db;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .instructions ul {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        
+        .result-section {
+            margin-top: 25px;
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .result-title {
+            color: #27ae60;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .file-list {
+            background-color: #f1f8ff;
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #d1e7ff;
+        }
+        
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            transition: background-color 0.2s;
+        }
+        
+        .file-item:hover {
+            background-color: #e3f2fd;
+        }
+        
+        .file-item:last-child {
+            border-bottom: none;
+        }
+        
+        .file-name {
+            font-weight: 500;
+        }
+        
+        .file-size {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        
+        .status-message {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .processing {
+            background-color: #cce5ff;
+            color: #004085;
+            border: 1px solid #b8daff;
+        }
+        
+        .progress-container {
+            width: 100%;
+            height: 20px;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            margin: 15px 0;
+            overflow: hidden;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            border-radius: 10px;
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+        
+        .progress-text {
+            text-align: center;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .file-info {
+            background-color: #e3f2fd;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+        
+        .large-file-warning {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 15px;
+            border: 1px solid #ffeeba;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-file-alt"></i> เครื่องมือแยกและรวมไฟล์ข้อความ</h1>
+            <p class="subtitle">รองรับไฟล์ขนาดใหญ่ - แยกไฟล์ .txt ออกเป็นส่วนๆ และรวมกลับคืนได้</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="section">
+                <h2 class="section-title"><i class="fas fa-cut"></i> แยกไฟล์ข้อความ</h2>
+                
+                <div class="large-file-warning">
+                    <i class="fas fa-exclamation-triangle"></i> รองรับไฟล์ขนาดใหญ่ (40,000+ บรรทัด)
+                </div>
+                
+                <div class="input-group">
+                    <label for="fileInput">เลือกไฟล์ .txt</label>
+                    <input type="file" id="fileInput" accept=".txt">
+                </div>
+                
+                <div class="input-group">
+                    <label for="linesPerFile">จำนวนบรรทัดต่อไฟล์</label>
+                    <input type="number" id="linesPerFile" min="1" value="1000">
+                </div>
+                
+                <button id="splitBtn">
+                    <i class="fas fa-scissors"></i> แยกไฟล์
+                </button>
+                
+                <div class="progress-container" id="splitProgressContainer" style="display:none;">
+                    <div class="progress-bar" id="splitProgressBar"></div>
+                </div>
+                <div class="progress-text" id="splitProgressText">0%</div>
+                
+                <div id="splitStatus" class="status-message"></div>
+                
+                <div class="instructions">
+                    <h3><i class="fas fa-info-circle"></i> คำแนะนำการแยกไฟล์</h3>
+                    <ul>
+                        <li>เลือกไฟล์ .txt ที่ต้องการแยก (รองรับไฟล์ขนาดใหญ่)</li>
+                        <li>ระบุจำนวนบรรทัดที่ต้องการในแต่ละไฟล์ย่อย (ค่าเริ่มต้น: 1000 บรรทัด)</li>
+                        <li>ไฟล์ที่แยกแล้วจะมีชื่อตามรูปแบบ: ชื่อต้นฉบับ_แยกข้อความXXXX.txt</li>
+                        <li>ตัวอย่าง: data.txt → data_แยกข้อความ0001.txt, data_แยกข้อความ0002.txt</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2 class="section-title"><i class="fas fa-puzzle-piece"></i> รวมไฟล์ข้อความ</h2>
+                
+                <div class="input-group">
+                    <label for="mergeInput">เลือกไฟล์ที่ต้องการรวม (หลายไฟล์ได้)</label>
+                    <input type="file" id="mergeInput" accept=".txt" multiple>
+                </div>
+                
+                <button id="mergeBtn" class="merge-btn">
+                    <i class="fas fa-object-group"></i> รวมไฟล์
+                </button>
+                
+                <div class="progress-container" id="mergeProgressContainer" style="display:none;">
+                    <div class="progress-bar" id="mergeProgressBar"></div>
+                </div>
+                <div class="progress-text" id="mergeProgressText">0%</div>
+                
+                <div id="mergeStatus" class="status-message"></div>
+                
+                <div class="instructions">
+                    <h3><i class="fas fa-info-circle"></i> คำแนะนำการรวมไฟล์</h3>
+                    <ul>
+                        <li>เลือกไฟล์ทั้งหมดที่ต้องการรวมกลับเป็นไฟล์เดียว</li>
+                        <li>ไฟล์จะถูกรวมตามลำดับตัวเลขในชื่อไฟล์ (0001, 0002, ...)</li>
+                        <li>ไฟล์ผลลัพธ์จะมีชื่อตามไฟล์แรกที่เลือก โดยตัดส่วน "_แยกข้อความXXXX" ออก</li>
+                        <li>ตัวอย่าง: data_แยกข้อความ0001.txt, data_แยกข้อความ0002.txt → data.txt</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="result-section" id="splitResult">
+            <h3 class="result-title"><i class="fas fa-check-circle"></i> แยกไฟล์เรียบร้อยแล้ว!</h3>
+            <div class="file-info">
+                <i class="fas fa-file"></i> ไฟล์ต้นฉบับ: <span id="originalFileName"></span> | 
+                <i class="fas fa-list"></i> จำนวนบรรทัด: <span id="originalLineCount">0</span>
+            </div>
+            <p>ไฟล์ของคุณถูกแบ่งออกเป็น <span id="fileCount">0</span> ไฟล์:</p>
+            <div class="file-list" id="splitFileList"></div>
+            <button id="downloadSplitBtn" class="download-btn">
+                <i class="fas fa-download"></i> ดาวน์โหลดไฟล์ที่แยกทั้งหมด (ZIP)
+            </button>
+        </div>
+        
+        <div class="result-section" id="mergeResult">
+            <h3 class="result-title"><i class="fas fa-check-circle"></i> รวมไฟล์เรียบร้อยแล้ว!</h3>
+            <p>ไฟล์ทั้งหมดถูกรวมเป็นไฟล์เดียว:</p>
+            <div class="file-list" id="mergeFileList"></div>
+            <button id="downloadMergeBtn" class="download-btn">
+                <i class="fas fa-download"></i> ดาวน์โหลดไฟล์ที่รวมแล้ว
+            </button>
+        </div>
+        
+        <div class="footer">
+            <p>สร้างด้วย HTML, CSS และ JavaScript | © 2023 เครื่องมือจัดการไฟล์ข้อความสำหรับไฟล์ขนาดใหญ่</p>
+        </div>
+    </div>
+
+    <!-- เราใช้ JSZip สำหรับการบีบอัดไฟล์ในส่วนการแยกไฟล์ -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    
+    <script>
+        // ฟังก์ชันแสดงสถานะ
+        function showStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `status-message ${type}`;
+            element.style.display = 'block';
+        }
+
+        // ฟังก์ชันซ่อนสถานะ
+        function hideStatus(elementId) {
+            document.getElementById(elementId).style.display = 'none';
+        }
+
+        // ฟังก์ชันอัพเดท progress bar
+        function updateProgressBar(progressId, barId, textId, percentage) {
+            const progressBar = document.getElementById(barId);
+            const progressText = document.getElementById(textId);
+            
+            progressBar.style.width = `${percentage}%`;
+            progressText.textContent = `${Math.round(percentage)}%`;
+            
+            // แสดง progress container ถ้ายังไม่แสดง
+            document.getElementById(progressId).style.display = 'block';
+        }
+
+        // ฟังก์ชันหลักสำหรับการแยกไฟล์
+        document.getElementById('splitBtn').addEventListener('click', async function() {
+            const fileInput = document.getElementById('fileInput');
+            const linesPerFileInput = document.getElementById('linesPerFile');
+            const splitStatus = document.getElementById('splitStatus');
+            const file = fileInput.files[0];
+            
+            // ตรวจสอบว่าผู้ใช้เลือกไฟล์หรือไม่
+            if (!file) {
+                showStatus('splitStatus', '❌ กรุณาเลือกไฟล์ .txt ก่อน', 'error');
+                return;
+            }
+            
+            // ตรวจสอบนามสกุลไฟล์
+            if (!file.name.toLowerCase().endsWith('.txt')) {
+                showStatus('splitStatus', '❌ กรุณาเลือกไฟล์ .txt เท่านั้น', 'error');
+                return;
+            }
+            
+            const linesPerFile = parseInt(linesPerFileInput.value);
+            if (isNaN(linesPerFile)) {
+                showStatus('splitStatus', '❌ กรุณาระบุจำนวนบรรทัดต่อไฟล์ที่ถูกต้อง', 'error');
+                return;
+            }
+            
+            if (linesPerFile <= 0) {
+                showStatus('splitStatus', '❌ จำนวนบรรทัดต้องมากกว่า 0', 'error');
+                return;
+            }
+            
+            showStatus('splitStatus', '⏳ กำลังอ่านไฟล์...', 'processing');
+            
+            try {
+                // อ่านไฟล์
+                const content = await readFileAsText(file);
+                const lines = content.split('\n');
+                const totalLines = lines.length;
+                const totalFiles = Math.ceil(totalLines / linesPerFile);
+                
+                // แสดงข้อมูลไฟล์ต้นฉบับ
+                document.getElementById('originalFileName').textContent = file.name;
+                document.getElementById('originalLineCount').textContent = totalLines.toLocaleString();
+                
+                showStatus('splitStatus', `⏳ กำลังแยกไฟล์ (${totalLines.toLocaleString()} บรรทัด)...`, 'processing');
+                
+                // สร้างไฟล์ย่อยทั้งหมด
+                const zip = new JSZip();
+                const baseName = file.name.replace('.txt', '');
+                
+                let filesCreated = 0;
+                
+                for (let i = 0; i < totalFiles; i++) {
+                    const start = i * linesPerFile;
+                    const end = Math.min((i + 1) * linesPerFile, totalLines);
+                    const chunk = lines.slice(start, end).join('\n');
+                    
+                    const fileName = `${baseName}_แยกข้อความ${(i+1).toString().padStart(4, '0')}.txt`;
+                    zip.file(fileName, chunk);
+                    
+                    filesCreated++;
+                    
+                    // อัพเดทความคืบหน้า
+                    const progress = ((i + 1) / totalFiles) * 100;
+                    updateProgressBar('splitProgressContainer', 'splitProgressBar', 'splitProgressText', progress);
+                    
+                    // แสดงสถานะเป็นระยะๆ
+                    if (i % 10 === 0 || i === totalFiles - 1) {
+                        showStatus('splitStatus', `⏳ กำลังสร้างไฟล์ที่ ${i+1} จาก ${totalFiles}...`, 'processing');
+                        // ใช้ setTimeout เพื่อให้ UI อัพเดท
+                        await new Promise(resolve => setTimeout(resolve, 0));
+                    }
+                }
+                
+                // สร้างไฟล์ ZIP
+                showStatus('splitStatus', '⏳ กำลังสร้างไฟล์ ZIP...', 'processing');
+                const blob = await zip.generateAsync({type: 'blob'}, function(metadata) {
+                    updateProgressBar('splitProgressContainer', 'splitProgressBar', 'splitProgressText', metadata.percent);
+                });
+                
+                const url = URL.createObjectURL(blob);
+                
+                // แสดงผลลัพธ์
+                document.getElementById('fileCount').textContent = totalFiles;
+                
+                // สร้างรายการไฟล์
+                const fileList = document.getElementById('splitFileList');
+                fileList.innerHTML = '';
+                
+                for (let i = 0; i < totalFiles; i++) {
+                    const fileName = `${baseName}_แยกข้อความ${(i+1).toString().padStart(4, '0')}.txt`;
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'file-item';
+                    fileItem.innerHTML = `
+                        <span class="file-name">${fileName}</span>
+                        <span class="file-size">${Math.round(linesPerFile * 60 / 1024).toFixed(1)} KB</span>
+                    `;
+                    fileList.appendChild(fileItem);
+                }
+                
+                // ตั้งค่าให้ปุ่มดาวน์โหลด
+                const downloadBtn = document.getElementById('downloadSplitBtn');
+                downloadBtn.onclick = function() {
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${baseName}_แยกไฟล์.zip`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                };
+                
+                // แสดงส่วนผลลัพธ์
+                document.getElementById('splitResult').style.display = 'block';
+                document.getElementById('mergeResult').style.display = 'none';
+                showStatus('splitStatus', `✅ แยกไฟล์สำเร็จแล้ว! สร้าง ${totalFiles} ไฟล์`, 'success');
+            } catch (error) {
+                showStatus('splitStatus', `❌ เกิดข้อผิดพลาด: ${error.message}`, 'error');
+                console.error('Error splitting file:', error);
+            }
+        });
+        
+        // ฟังก์ชันอ่านไฟล์เป็นข้อความ
+        function readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    resolve(e.target.result);
+                };
+                reader.onerror = function() {
+                    reject(new Error('เกิดข้อผิดพลาดในการอ่านไฟล์'));
+                };
+                reader.readAsText(file);
+            });
+        }
+        
+        // ฟังก์ชันหลักสำหรับการรวมไฟล์
+        document.getElementById('mergeBtn').addEventListener('click', async function() {
+            const fileInput = document.getElementById('mergeInput');
+            const files = fileInput.files;
+            const mergeStatus = document.getElementById('mergeStatus');
+            
+            if (!files || files.length === 0) {
+                showStatus('mergeStatus', '❌ กรุณาเลือกไฟล์ที่ต้องการรวม', 'error');
+                return;
+            }
+            
+            // ตรวจสอบไฟล์
+            let validFiles = true;
+            for (let i = 0; i < files.length; i++) {
+                if (!files[i].name.toLowerCase().endsWith('.txt')) {
+                    validFiles = false;
+                    break;
+                }
+            }
+            
+            if (!validFiles) {
+                showStatus('mergeStatus', '❌ กรุณาเลือกไฟล์ .txt เท่านั้น', 'error');
+                return;
+            }
+            
+            showStatus('mergeStatus', '⏳ กำลังรวมไฟล์...', 'processing');
+            
+            try {
+                // เรียงไฟล์ตามลำดับตัวเลข
+                const sortedFiles = Array.from(files).sort((a, b) => {
+                    const numA = parseInt(a.name.match(/\d{4}/)?.[0] || 0);
+                    const numB = parseInt(b.name.match(/\d{4}/)?.[0] || 0);
+                    return numA - numB;
+                });
+                
+                // กำหนดชื่อไฟล์ผลลัพธ์
+                const baseName = sortedFiles[0].name.replace(/_แยกข้อความ\d{4}/, '').replace('.txt', '');
+                const mergedContent = [];
+                
+                // อ่านและรวมไฟล์ทั้งหมด
+                for (let i = 0; i < sortedFiles.length; i++) {
+                    const content = await readFileAsText(sortedFiles[i]);
+                    mergedContent.push(content);
+                    
+                    // อัพเดทความคืบหน้า
+                    const progress = ((i + 1) / sortedFiles.length) * 100;
+                    updateProgressBar('mergeProgressContainer', 'mergeProgressBar', 'mergeProgressText', progress);
+                    
+                    // แสดงสถานะเป็นระยะๆ
+                    if (i % 5 === 0 || i === sortedFiles.length - 1) {
+                        showStatus('mergeStatus', `⏳ กำลังรวมไฟล์: ${i+1}/${sortedFiles.length}...`, 'processing');
+                        await new Promise(resolve => setTimeout(resolve, 0));
+                    }
+                }
+                
+                const finalContent = mergedContent.join('\n');
+                const blob = new Blob([finalContent], {type: 'text/plain'});
+                const url = URL.createObjectURL(blob);
+                
+                // แสดงผลลัพธ์
+                const fileList = document.getElementById('mergeFileList');
+                fileList.innerHTML = `
+                    <div class="file-item">
+                        <span class="file-name">${baseName}.txt</span>
+                        <span class="file-size">${(blob.size / 1024 / 1024).toFixed(2)} MB</span>
+                    </div>
+                `;
+                
+                // ตั้งค่าให้ปุ่มดาวน์โหลด
+                const downloadBtn = document.getElementById('downloadMergeBtn');
+                downloadBtn.onclick = function() {
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${baseName}_รวมแล้ว.txt`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                };
+                
+                // แสดงส่วนผลลัพธ์
+                document.getElementById('mergeResult').style.display = 'block';
+                document.getElementById('splitResult').style.display = 'none';
+                showStatus('mergeStatus', `✅ รวมไฟล์สำเร็จแล้ว! รวม ${sortedFiles.length} ไฟล์`, 'success');
+            } catch (error) {
+                showStatus('mergeStatus', `❌ เกิดข้อผิดพลาด: ${error.message}`, 'error');
+                console.error('Error merging files:', error);
+            }
+        });
+    </script>
+</body>
+</html>
