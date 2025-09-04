@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>ตัวแปลไฟล์ .txt (Gemini) — v9 Final</title>
+<title>ตัวแปลไฟล์ .txt (Gemini) — v9.1 Save Feature</title>
 <!-- Add Font Awesome for Icons -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
@@ -49,6 +49,7 @@
     background:#374151; border:1px solid #4b5563; color:#d1d5db;
   }
   button.secondary:hover { background-color: #4b5563; }
+  button.saved { background-color: var(--ok); color: #111827; }
 
   .grid-cols-2{display:grid; grid-template-columns:repeat(2, 1fr); gap:16px}
   .grid-cols-3{display:grid; grid-template-columns:1fr auto auto; gap:12px; align-items:end}
@@ -92,7 +93,7 @@
 <body>
 <div class="wrap">
   <header>
-    <h1><i class="fa-solid fa-language" style="color:var(--accent)"></i> ตัวแปลไฟล์ .txt จำนวนมาก <span class="tag">v9 Final</span></h1>
+    <h1><i class="fa-solid fa-language" style="color:var(--accent)"></i> ตัวแปลไฟล์ .txt จำนวนมาก <span class="tag">v9.1 Final</span></h1>
     <p class="muted">แปลไฟล์ข้อความโดยยังคงโครงสร้างเดิมแบบบรรทัดต่อบรรทัด (1:1) ขับเคลื่อนโดย Gemini</p>
   </header>
 
@@ -109,7 +110,7 @@
     <div class="grid-cols-2" style="margin-top:16px">
       <div>
         <label for="model">Model</label>
-        <input id="model" type="text" value="gemini-1.5-flash-latest">
+        <input id="model" type="text" value="gemini-2.5-flash">
       </div>
       <div class="grid-cols-2">
           <div>
@@ -156,6 +157,8 @@
       <label><input type="checkbox" id="fixedRows" checked> ความสูงบรรทัดคงที่</label>
       <div style="flex-grow: 1;"></div>
       <button class="secondary" id="openSelected" disabled><i class="fa-solid fa-folder-open"></i>เปิดไฟล์ที่เลือก</button>
+      <!-- NEW SAVE BUTTON ADDED HERE -->
+      <button id="saveEditsBtn" class="secondary" disabled><i class="fa-solid fa-save"></i>บันทึกการแก้ไข</button>
       <button id="downloadRight" disabled><i class="fa-solid fa-download"></i>ดาวน์โหลดไฟล์นี้</button>
       <button id="downloadZipAll" class="secondary" disabled><i class="fa-solid fa-file-zipper"></i>ดาวน์โหลดทั้งหมด (ZIP)</button>
     </div>
@@ -170,7 +173,7 @@
         <div class="grid" id="gridRight"><div class="table" id="tableRight"></div></div>
       </div>
     </div>
-    <div class="help"><i class="fa-solid fa-circle-info"></i> คำแนะนำ: คลิกที่ข้อความฝั่งขวาเพื่อแก้ไข, ใช้ปุ่มด้านบนเพื่อดาวน์โหลดไฟล์ที่แก้ไขแล้ว</div>
+    <div class="help"><i class="fa-solid fa-circle-info"></i> คำแนะนำ: แก้ไขข้อความฝั่งขวา แล้วกด "บันทึกการแก้ไข" เพื่ออัปเดตไฟล์</div>
   </div>
 
 </div>
@@ -193,6 +196,7 @@
     translateBtn: document.getElementById('translateBtn'),
     clearFiles: document.getElementById('clearFiles'),
     openSelected: document.getElementById('openSelected'),
+    saveEditsBtn: document.getElementById('saveEditsBtn'), // New button element
     downloadRight: document.getElementById('downloadRight'),
     downloadZipAll: document.getElementById('downloadZipAll'),
     editor: document.getElementById('editor'),
@@ -282,6 +286,7 @@
     const hasSelection = selectedIndex !== -1 && filesState[selectedIndex];
     const isSelectionTranslated = hasSelection && filesState[selectedIndex].translatedLines;
     els.openSelected.disabled = !isSelectionTranslated;
+    els.saveEditsBtn.disabled = !isSelectionTranslated; // Manage save button state
     els.downloadRight.disabled = !isSelectionTranslated;
     els.downloadZipAll.disabled = filesState.every(x => !x.translatedLines);
   }
@@ -361,6 +366,24 @@
     const nodes = els.tableRight.querySelectorAll('div[contenteditable]');
     return Array.from(nodes).map(n=>n.textContent ?? "");
   }
+
+  // NEW FUNCTION to save edits explicitly
+  function saveCurrentEdits() {
+    if (selectedIndex < 0 || !filesState[selectedIndex]) return;
+    
+    filesState[selectedIndex].translatedLines = getRightLinesFromDOM();
+    log(`บันทึกการแก้ไขสำหรับไฟล์: ${filesState[selectedIndex].name}`);
+
+    // Provide user feedback
+    const btn = els.saveEditsBtn;
+    btn.innerHTML = '<i class="fa-solid fa-check"></i> บันทึกแล้ว!';
+    btn.classList.add('saved');
+    setTimeout(() => {
+        btn.innerHTML = '<i class="fa-solid fa-save"></i> บันทึกการแก้ไข';
+        btn.classList.remove('saved');
+    }, 2000);
+  }
+  els.saveEditsBtn.addEventListener('click', saveCurrentEdits);
 
   function makeClient(){
     const key = els.apiKey.value.trim();
@@ -488,7 +511,10 @@ ${JSON.stringify({lines: chunk})}`;
     if (selectedIndex < 0) return;
     const f = filesState[selectedIndex];
     if (!f || !f.translatedLines) return;
-    f.translatedLines = getRightLinesFromDOM(); // Save latest edits
+    
+    // Auto-save before downloading
+    saveCurrentEdits();
+
     const blob = new Blob([fromLines(f.translatedLines)], {type:"text/plain;charset=utf-8"});
     const a = document.createElement('a');
     const name = f.name.replace(/\.txt$/i,'') + `.${els.tgtLang.value}.txt`;
@@ -503,9 +529,12 @@ ${JSON.stringify({lines: chunk})}`;
   els.downloadZipAll.addEventListener('click', async ()=>{
     if (filesState.every(x=>!x.translatedLines)) return;
     const zip = new JSZip();
+    
+    // Auto-save any pending edits in the currently open file before zipping
     if(selectedIndex !== -1 && filesState[selectedIndex]?.translatedLines) {
-      filesState[selectedIndex].translatedLines = getRightLinesFromDOM();
+      saveCurrentEdits();
     }
+
     for (const f of filesState){
       if (f.translatedLines){
         const blob = new Blob([fromLines(f.translatedLines)], {type:"text/plain;charset=utf-8"});
