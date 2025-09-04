@@ -56,7 +56,7 @@
   .filelist{max-height:240px; overflow:auto; border:1px solid var(--line); border-radius:12px; margin-top: 16px;}
   .fileitem{
     display: grid; grid-template-columns:1fr auto auto; gap:12px; padding:10px 14px;
-    border-bottom:1px solid #2b3546; align-items:center; transition: background-color .2s;
+    border-bottom:1px solid #2b3546; align-items:center; transition: background-color .2s; cursor: pointer;
   }
   .fileitem:last-child{border-bottom:0}
   .fileitem.selected { background-color: #2563eb; }
@@ -93,7 +93,7 @@
 <body>
 <div class="wrap">
   <header>
-    <h1><i class="fa-solid fa-language" style="color:var(--accent)"></i> ตัวแปลไฟล์ .txt จำนวนมาก <span class="tag">v8 Modern</span></h1>
+    <h1><i class="fa-solid fa-language" style="color:var(--accent)"></i> ตัวแปลไฟล์ .txt จำนวนมาก <span class="tag">v8.1 Final</span></h1>
     <p class="muted">แปลไฟล์ข้อความโดยยังคงโครงสร้างเดิมแบบบรรทัดต่อบรรทัด (1:1) ขับเคลื่อนโดย Gemini</p>
   </header>
 
@@ -176,9 +176,14 @@
 
 </div>
 
-<script type="module">
-  import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
-  import JSZip from "https://esm.run/jszip";
+<!-- Load Libraries from reliable CDNs -->
+<script src="https://cdn.jsdelivr.net/npm/@google/generative-ai/dist/main.iife.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<!-- Main Application Script -->
+<script>
+  // Access the library from the global scope
+  const { GoogleGenerativeAI } = google.generativeai;
 
   const els = {
     apiKey: document.getElementById('apiKey'),
@@ -197,7 +202,7 @@
     downloadRight: document.getElementById('downloadRight'),
     downloadZipAll: document.getElementById('downloadZipAll'),
     editor: document.getElementById('editor'),
-    editorSection: document.getElementById('editor-section'), // New element
+    editorSection: document.getElementById('editor-section'),
     gridLeft: document.getElementById('gridLeft'),
     gridRight: document.getElementById('gridRight'),
     tableLeft: document.getElementById('tableLeft'),
@@ -211,7 +216,13 @@
   let filesState = []; // [{file, name, size, lines?, translatedLines?}]
   let selectedIndex = -1;
 
-  function log(msg){ els.status.textContent += msg + "\n"; els.status.scrollTop = els.status.scrollHeight; }
+  function log(msg){
+    if (els.status.textContent === 'สถานะการทำงานจะแสดงที่นี่...') {
+        els.status.textContent = '';
+    }
+    els.status.textContent += msg + "\n";
+    els.status.scrollTop = els.status.scrollHeight;
+  }
   function clearLog(){ els.status.textContent = "สถานะการทำงานจะแสดงที่นี่..."; }
 
   function renderFileList(){
@@ -272,16 +283,22 @@
       row.addEventListener('click', () => {
         selectedIndex = idx;
         renderFileList(); // Re-render to show selection
-        els.openSelected.disabled = false;
-        els.downloadRight.disabled = !filesState[idx].translatedLines;
         els.downloadZipAll.disabled = filesState.every(x=>!x.translatedLines);
-        if (filesState[idx].translatedLines) { // Auto-open if already translated
+        if (filesState[idx].translatedLines) {
+            els.openSelected.disabled = false;
+            els.downloadRight.disabled = false;
             els.openSelected.click();
+        } else {
+            els.openSelected.disabled = true;
+            els.downloadRight.disabled = true;
+            els.editorSection.classList.add('hidden');
         }
       });
     });
-    // Enable/disable open button based on if a file is selected
-    els.openSelected.disabled = selectedIndex === -1;
+    // Final check for buttons
+    els.openSelected.disabled = selectedIndex === -1 || !filesState[selectedIndex]?.translatedLines;
+    els.downloadRight.disabled = selectedIndex === -1 || !filesState[selectedIndex]?.translatedLines;
+    els.downloadZipAll.disabled = filesState.every(x=>!x.translatedLines);
   }
 
   // --- robust decoding ---
@@ -421,19 +438,4 @@
 - Keep placeholders like {name}, <tag>, %s, {0} as they are.
 `;
 
-  async function translateChunk(model, chunk, src, tgt, retries){
-    const prompt = `${SYSTEM_RULES}
-Translate from ${src} to ${tgt} (1:1) for the following input:
-${JSON.stringify({lines: chunk})}
-Respond with valid JSON according to the schema.`;
-    for (let attempt=0; attempt<=retries; attempt++){
-      try{
-        const result = await model.generateContent(prompt);
-        let raw = result.response.text();
-        let obj = null;
-        try{ obj = JSON.parse(raw); }
-        catch(e){
-          const m = raw.match(/\{[\s\S]*\}/);
-          if (m){ obj = JSON.parse(m[0]); }
-        }
-        if (!obj || !Array.isArray(obj.lines)) throw new Error("Invalid JSON s
+  async function translateC
