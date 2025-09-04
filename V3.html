@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ตัวแปลไฟล์ .txt จำนวนมาก (ล็อกโครงสร้าง 1:1) — Modern UI</title>
+<!-- Add Font Awesome for Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap');
+
+  :root{
+    --bg: #111827; --card: #1f2937; --fg: #d1d5db; --muted: #9ca3af; --line: #374151;
+    --accent: #3b82f6; --accent-hover: #60a5fa; --ok: #34d399; --err: #f87171;
+    --font-family: 'Sarabun', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family: var(--font-family); font-weight: 400;
+  }
+  .wrap{max-width:1100px; margin:24px auto; padding:0 16px; display: grid; gap: 24px;}
+  h1{margin:0 0 4px; font-size:26px; color: #f9fafb;}
+  h2{margin:0 0 16px; font-size: 18px; color: #e5e7eb; font-weight: 500; border-bottom: 1px solid var(--line); padding-bottom: 10px;}
+  h2 i{margin-right: 10px; color: var(--accent);}
+  .muted{color:var(--muted)}
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:16px;
+    padding: 20px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  }
+  label{font-size:14px; color:var(--muted); display: block; margin-bottom: 6px;}
+  input[type=text],input[type=password],select{
+    width:100%; background:#111827; color:var(--fg);
+    border:1px solid var(--line); border-radius:10px; padding:10px 14px;
+    transition: border-color .2s, box-shadow .2s; font-family: inherit; font-size: 15px;
+  }
+  input[type=text]:focus,input[type=password]:focus,select:focus {
+    outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px #1e40af;
+  }
+  button{
+    background:var(--accent); border:0; color:#fff; border-radius:10px;
+    padding:10px 16px; font-weight:700; cursor:pointer; font-family: inherit; font-size: 15px;
+    display: inline-flex; align-items: center; gap: 8px; transition: background-color .2s;
+  }
+  button:hover { background-color: var(--accent-hover); }
+  button:disabled { background: #374151; color: #9ca3af; cursor: not-allowed; }
+
+  button.secondary{
+    background:#374151; border:1px solid #4b5563; color:#d1d5db;
+  }
+  button.secondary:hover { background-color: #4b5563; }
+
+  .grid-cols-2{display:grid; grid-template-columns:repeat(2, 1fr); gap:16px}
+  .grid-cols-3{display:grid; grid-template-columns:1fr auto auto; gap:12px; align-items:end}
+
+  .filelist{max-height:240px; overflow:auto; border:1px solid var(--line); border-radius:12px; margin-top: 16px;}
+  .fileitem{
+    display: grid; grid-template-columns:1fr auto auto; gap:12px; padding:10px 14px;
+    border-bottom:1px solid #2b3546; align-items:center; transition: background-color .2s;
+  }
+  .fileitem:last-child{border-bottom:0}
+  .fileitem.selected { background-color: #2563eb; }
+  .fileitem-name { display: flex; flex-direction: column; }
+  .fileitem-name .name { font-weight: 500; }
+  .fileitem-name .meta { font-size: 12px; color: var(--muted); }
+  .fileitem.selected .fileitem-name .meta { color: #dbeafe; }
+
+  .status{
+    white-space:pre-wrap; background:#111827; border:1px dashed #4b5563;
+    border-radius:10px; padding:12px; font-size:13px; color:var(--muted);
+    max-height:200px; overflow:auto; margin-top: 16px;
+  }
+  .toolbar{display:flex; flex-wrap:wrap; gap:10px; align-items:center;}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:12px;height:65vh; margin-top: 16px;}
+  .pane h3{margin:0 0 8px; font-size:16px; color:var(--muted); font-weight: 500;}
+  .grid{position:relative;height:100%;overflow:auto;border:1px solid var(--line);border-radius:12px;background:#111827}
+  .table{min-width:600px}
+  .rowline{display:grid;grid-template-columns:64px 1fr;border-bottom:1px solid #2b3546;align-items:center}
+  .rowline:nth-child(even){background:#1f2937}
+  .lineNo{padding:6px 8px;border-right:1px solid #2b3546;color:#9ca3af;text-align:right;white-space:nowrap}
+  .cell div[contenteditable]{padding:6px 12px;min-height:30px;outline:none;white-space:pre;overflow:auto}
+  .fixed .cell div[contenteditable]{line-height:1.6;height:1.6em;overflow-y:hidden;overflow-x:auto}
+  
+  .controls{display:flex; gap:12px; align-items:center; justify-content:space-between; margin-top:16px;}
+  .help{font-size:13px;color:var(--muted); margin-top: 16px;}
+  .tag{font-size:14px;color:#9ca3af; font-weight: 400;}
+  .ok{color:var(--ok)} .err{color:var(--err)}
+
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><i class="fa-solid fa-language" style="color:var(--accent)"></i> ตัวแปลไฟล์ .txt จำนวนมาก <span class="tag">v8 Modern</span></h1>
+    <p class="muted">แปลไฟล์ข้อความโดยยังคงโครงสร้างเดิมแบบบรรทัดต่อบรรทัด (1:1) ขับเคลื่อนโดย Gemini</p>
+  </header>
+
+  <div class="card">
+    <h2><i class="fa-solid fa-sliders"></i>1. การตั้งค่า (Configuration)</h2>
+    <div class="grid-cols-3">
+      <div>
+        <label for="apiKey">Gemini API Key</label>
+        <input id="apiKey" type="password" placeholder="กรอก API Key ของคุณที่นี่">
+      </div>
+      <button class="secondary" id="checkKeyBtn"><i class="fa-solid fa-check-circle"></i>ตรวจสอบ API Key</button>
+      <div id="checkKeyResult" class="muted" style="min-width:140px"></div>
+    </div>
+    <div class="grid-cols-2" style="margin-top:16px">
+      <div>
+        <label for="model">Model</label>
+        <input id="model" type="text" value="gemini-1.5-flash-latest">
+      </div>
+      <div class="grid-cols-2">
+          <div>
+            <label for="srcLang">Source Language</label>
+            <input id="srcLang" type="text" value="auto">
+          </div>
+          <div>
+            <label for="tgtLang">Target Language</label>
+            <input id="tgtLang" type="text" value="Thai">
+          </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><i class="fa-solid fa-file-lines"></i>2. จัดการไฟล์ (File Management)</h2>
+    <div class="grid-cols-2">
+        <div class="grid-cols-2">
+            <div>
+                <label for="batch">Batch size (บรรทัด/ครั้ง)</label>
+                <input id="batch" type="text" value="50" inputmode="numeric">
+            </div>
+            <div>
+                <label for="retries">Retry (ครั้ง)</label>
+                <input id="retries" type="text" value="2" inputmode="numeric">
+            </div>
+        </div>
+        <div style="display:flex; gap:12px; align-items: flex-end; justify-content: flex-end;">
+            <button class="secondary" id="pickBtn"><i class="fa-solid fa-plus"></i>เพิ่มไฟล์</button>
+            <input id="picker" type="file" accept=".txt,text/plain,*/*" multiple style="display:none" />
+            <button class="secondary" id="clearFiles"><i class="fa-solid fa-trash"></i>ล้างรายการ</button>
+            <button id="translateBtn"><i class="fa-solid fa-wand-magic-sparkles"></i>แปลทั้งหมด</button>
+        </div>
+    </div>
+
+    <div class="filelist" id="filelist"></div>
+    <div class="status mono" id="status">สถานะการทำงานจะแสดงที่นี่...</div>
+  </div>
+
+  <div id="editor-section" class="card hidden">
+    <h2><i class="fa-solid fa-pen-to-square"></i>3. แก้ไขและดาวน์โหลด (Edit & Download)</h2>
+    <div class="toolbar">
+      <label><input type="checkbox" id="syncScroll" checked> ซิงค์การเลื่อน</label>
+      <label><input type="checkbox" id="fixedRows" checked> ความสูงบรรทัดคงที่</label>
+      <div style="flex-grow: 1;"></div>
+      <button class="secondary" id="openSelected" disabled><i class="fa-solid fa-folder-open"></i>เปิดไฟล์ที่เลือก</button>
+      <button id="downloadRight" disabled><i class="fa-solid fa-download"></i>ดาวน์โหลดไฟล์นี้</button>
+      <button id="downloadZipAll" class="secondary" disabled><i class="fa-solid fa-file-zipper"></i>ดาวน์โหลดทั้งหมด (ZIP)</button>
+    </div>
+
+    <div class="split" id="editor">
+      <div class="pane">
+        <h3>ต้นฉบับ (ซ้าย)</h3>
+        <div class="grid" id="gridLeft"><div class="table" id="tableLeft"></div></div>
+      </div>
+      <div class="pane">
+        <h3>ฉบับแปล (ขวา - แก้ไขได้)</h3>
+        <div class="grid" id="gridRight"><div class="table" id="tableRight"></div></div>
+      </div>
+    </div>
+    <div class="help"><i class="fa-solid fa-circle-info"></i> คำแนะนำ: คลิกที่ข้อความฝั่งขวาเพื่อแก้ไข, ใช้ปุ่มด้านบนเพื่อดาวน์โหลดไฟล์ที่แก้ไขแล้ว</div>
+  </div>
+
+</div>
+
+<script type="module">
+  import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+  import JSZip from "https://esm.run/jszip";
+
+  const els = {
+    apiKey: document.getElementById('apiKey'),
+    model: document.getElementById('model'),
+    srcLang: document.getElementById('srcLang'),
+    tgtLang: document.getElementById('tgtLang'),
+    batch: document.getElementById('batch'),
+    retries: document.getElementById('retries'),
+    pickBtn: document.getElementById('pickBtn'),
+    picker: document.getElementById('picker'),
+    filelist: document.getElementById('filelist'),
+    status: document.getElementById('status'),
+    translateBtn: document.getElementById('translateBtn'),
+    clearFiles: document.getElementById('clearFiles'),
+    openSelected: document.getElementById('openSelected'),
+    downloadRight: document.getElementById('downloadRight'),
+    downloadZipAll: document.getElementById('downloadZipAll'),
+    editor: document.getElementById('editor'),
+    editorSection: document.getElementById('editor-section'), // New element
+    gridLeft: document.getElementById('gridLeft'),
+    gridRight: document.getElementById('gridRight'),
+    tableLeft: document.getElementById('tableLeft'),
+    tableRight: document.getElementById('tableRight'),
+    syncScroll: document.getElementById('syncScroll'),
+    fixedRows: document.getElementById('fixedRows'),
+    checkKeyBtn: document.getElementById('checkKeyBtn'),
+    checkKeyResult: document.getElementById('checkKeyResult'),
+  };
+
+  let filesState = []; // [{file, name, size, lines?, translatedLines?}]
+  let selectedIndex = -1;
+
+  function log(msg){ els.status.textContent += msg + "\n"; els.status.scrollTop = els.status.scrollHeight; }
+  function clearLog(){ els.status.textContent = "สถานะการทำงานจะแสดงที่นี่..."; }
+
+  function renderFileList(){
+    els.filelist.innerHTML = "";
+    if (!filesState.length){
+      els.filelist.innerHTML = '<div class="fileitem"><div class="fileitem-name"><span>ยังไม่มีไฟล์</span><span class="meta">กด "เพิ่มไฟล์" เพื่อเริ่มต้น</span></div></div>';
+      els.openSelected.disabled = true; els.downloadRight.disabled = true; selectedIndex = -1;
+      return;
+    }
+    filesState.forEach((f, idx) => {
+      const row = document.createElement('div');
+      row.className = 'fileitem';
+      if (idx === selectedIndex) {
+        row.classList.add('selected');
+      }
+
+      const nameDiv = document.createElement('div');
+      nameDiv.className = 'fileitem-name';
+
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'name';
+      nameSpan.textContent = f.name;
+      
+      const metaSpan = document.createElement('span');
+      metaSpan.className = 'meta';
+      const meta = `(${(f.size/1024).toFixed(1)} KB)`;
+      const stat = f.translatedLines ? ' — ✅ แปลแล้ว' : (f.lines ? ` — ${f.lines.length} บรรทัด` : '');
+      metaSpan.textContent = `${meta}${stat}`;
+
+      nameDiv.appendChild(nameSpan);
+      nameDiv.appendChild(metaSpan);
+
+      const radio = document.createElement('input');
+      radio.type = 'radio'; radio.name = 'selFile'; radio.value = idx;
+      radio.style.display = 'none'; // Hide radio, click row instead
+
+      const rm = document.createElement('button');
+      rm.className = 'secondary';
+      rm.innerHTML = '<i class="fa-solid fa-times"></i>';
+      rm.style.padding = '8px 12px';
+      rm.addEventListener('click', (e) => {
+        e.stopPropagation(); // prevent row click
+        filesState.splice(idx,1);
+        if (selectedIndex === idx) {
+            selectedIndex = -1;
+            els.editorSection.classList.add('hidden');
+        } else if (selectedIndex > idx) {
+            selectedIndex--;
+        }
+        renderFileList();
+      });
+
+      row.appendChild(nameDiv);
+      row.appendChild(radio);
+      row.appendChild(rm);
+      els.filelist.appendChild(row);
+
+      row.addEventListener('click', () => {
+        selectedIndex = idx;
+        renderFileList(); // Re-render to show selection
+        els.openSelected.disabled = false;
+        els.downloadRight.disabled = !filesState[idx].translatedLines;
+        els.downloadZipAll.disabled = filesState.every(x=>!x.translatedLines);
+        if (filesState[idx].translatedLines) { // Auto-open if already translated
+            els.openSelected.click();
+        }
+      });
+    });
+    // Enable/disable open button based on if a file is selected
+    els.openSelected.disabled = selectedIndex === -1;
+  }
+
+  // --- robust decoding ---
+  async function readFileDecoded(file){
+    const buf = await file.arrayBuffer();
+    const bytes = new Uint8Array(buf);
+    function hasBOM(a,b,c){ return bytes[0]===a && bytes[1]===b && (c===undefined || bytes[2]===c); }
+    let enc = "utf-8", offset = 0;
+    if (bytes.length>=2 && hasBOM(0xFF,0xFE)){ enc = "utf-16le"; offset = 2; }
+    else if (bytes.length>=2 && hasBOM(0xFE,0xFF)){ enc = "utf-16be"; offset = 2; }
+    else if (bytes.length>=3 && hasBOM(0xEF,0xBB,0xBF)){ enc = "utf-8"; offset = 3; }
+    const view = offset ? bytes.subarray(offset) : bytes;
+    let dec; try{ dec = new TextDecoder(enc, {fatal:false}); } catch{ dec = new TextDecoder("utf-8", {fatal:false}); }
+    const text = dec.decode(view);
+    return text;
+  }
+
+  // Strong newline splitter (covers CRLF/CR/LF + VT/FF/NEL/LS/PS)
+  function splitLinesStrong(text){
+    let s = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    s = s.replace(/[\u000B\u000C\u0085\u2028\u2029]/g, "\n");
+    let lines = s.split("\n");
+    if (lines.length === 1 && /\n/.test(s)){
+      lines = s.match(/[^\n]*\n|[^\n]+$/g) || [s];
+      lines = lines.map(x=>x.endsWith("\n")?x.slice(0,-1):x);
+    }
+    return lines;
+  }
+  function fromLines(lines){ return lines.join("\n"); }
+
+  function pickFiles(){ els.picker.click(); }
+  els.pickBtn.addEventListener('click', pickFiles);
+  els.picker.addEventListener('change', e => {
+    const list = Array.from(e.target.files || []);
+    if (!list.length){ return; }
+    for (const f of list){ filesState.push({ file: f, name: f.name, size: f.size }); }
+    e.target.value = "";
+    renderFileList();
+    log(`เพิ่มไฟล์ ${list.length} รายการ (รวมทั้งหมด ${filesState.length})`);
+  });
+
+  els.clearFiles.addEventListener('click', () => {
+    filesState = []; selectedIndex = -1; renderFileList(); clearLog();
+    els.editorSection.classList.add('hidden');
+  });
+
+  // Scroll sync
+  (function attachScrollSync(){
+    const L = els.gridLeft, R = els.gridRight;
+    let lock = false;
+    function sync(a,b){
+      if (!els.syncScroll.checked) return;
+      if (lock) return;
+      lock = true; b.scrollTop = a.scrollTop; b.scrollLeft = a.scrollLeft; lock = false;
+    }
+    L.addEventListener('scroll', ()=>sync(L,R));
+    R.addEventListener('scroll', ()=>sync(R,L));
+  })();
+
+  // Fixed row height toggle
+  function applyFixedRows(){
+    const on = els.fixedRows.checked;
+    [els.tableLeft, els.tableRight].forEach(t => { t.classList.toggle('fixed', on); });
+  }
+  els.fixedRows.addEventListener('change', applyFixedRows);
+
+  // Build editor tables using source line count
+  function buildTables(srcLines, dstLines){
+    const n = srcLines.length;
+    const paddedDst = dstLines.slice(0, n);
+    if (paddedDst.length < n){
+      for (let i=paddedDst.length; i<n; i++) paddedDst.push("");
+    }
+    els.tableLeft.innerHTML = ""; els.tableRight.innerHTML = "";
+    for (let i=0;i<n;i++){
+      const lrow = document.createElement('div'); lrow.className = 'rowline';
+      const lno = document.createElement('div'); lno.className='lineNo mono'; lno.textContent = (i+1);
+      const lcell = document.createElement('div'); lcell.className='cell';
+      const ldiv = document.createElement('div'); ldiv.textContent = (srcLines[i] ?? ""); ldiv.className='mono';
+      ldiv.setAttribute('contenteditable','false');
+      lcell.appendChild(ldiv); lrow.appendChild(lno); lrow.appendChild(lcell); els.tableLeft.appendChild(lrow);
+
+      const rrow = document.createElement('div'); rrow.className = 'rowline';
+      const rno = document.createElement('div'); rno.className='lineNo mono'; rno.textContent = (i+1);
+      const rcell = document.createElement('div'); rcell.className='cell';
+      const rdiv = document.createElement('div'); rdiv.textContent = (paddedDst[i] ?? ""); rdiv.className='mono';
+      rdiv.setAttribute('contenteditable','true');
+      rcell.appendChild(rdiv); rrow.appendChild(rno); rrow.appendChild(rcell); els.tableRight.appendChild(rrow);
+    }
+    // Show the editor section
+    els.editorSection.classList.remove('hidden');
+    applyFixedRows();
+  }
+
+  function getRightLinesFromDOM(){
+    const nodes = els.tableRight.querySelectorAll('div[contenteditable]');
+    return Array.from(nodes).map(n=>n.textContent ?? "");
+  }
+
+  // Gemini client + key check
+  function makeClient(){
+    const key = els.apiKey.value.trim();
+    if (!key){ throw new Error("กรุณาใส่ Gemini API Key"); }
+    const genAI = new GoogleGenerativeAI(key);
+    const modelName = els.model.value.trim() || "gemini-1.5-flash-latest";
+    const model = genAI.getGenerativeModel({
+      model: modelName,
+      generationConfig: {
+        temperature: 0,
+        responseMimeType: "application/json",
+        responseSchema: { type: "object", properties: { lines: { type: "array", items: { type: "string" } } }, required: ["lines"] },
+      },
+    });
+    return {genAI, model, modelName};
+  }
+
+  els.checkKeyBtn.addEventListener('click', async ()=>{
+    els.checkKeyResult.textContent = "กำลังตรวจสอบ..."; els.checkKeyResult.className = "muted";
+    try{
+      const {model} = makeClient();
+      const res = await model.generateContent('{"lines":["ping"]} -> Please respond with only {"lines": ["pong"]}.');
+      const txt = res.response.text();
+      if (/\"pong\"/.test(txt)) { els.checkKeyResult.textContent = "✓ ใช้งานได้"; els.checkKeyResult.className = "ok"; }
+      else { els.checkKeyResult.textContent = "✗ คีย์ไม่ผ่าน"; els.checkKeyResult.className = "err"; }
+    }catch(e){
+      els.checkKeyResult.textContent = "✗ " + (e.message || "ตรวจสอบไม่สำเร็จ"); els.checkKeyResult.className = "err";
+    }
+  });
+
+  const SYSTEM_RULES = `You are a line-locked translation tool.
+- Input is JSON {"lines":[...]} where each item is a line from the source file.
+- You must respond with JSON only, e.g., {"lines":["...", "..."]}.
+- The number of items in "lines" must always match the input (1:1).
+- Preserve blank lines: if an input line is empty, return an empty string "" at the same position.
+- Do not merge/split lines, and do not add line numbers or descriptions.
+- Do not use code blocks or any text outside the JSON.
+- Keep placeholders like {name}, <tag>, %s, {0} as they are.
+`;
+
+  async function translateChunk(model, chunk, src, tgt, retries){
+    const prompt = `${SYSTEM_RULES}
+Translate from ${src} to ${tgt} (1:1) for the following input:
+${JSON.stringify({lines: chunk})}
+Respond with valid JSON according to the schema.`;
+    for (let attempt=0; attempt<=retries; attempt++){
+      try{
+        const result = await model.generateContent(prompt);
+        let raw = result.response.text();
+        let obj = null;
+        try{ obj = JSON.parse(raw); }
+        catch(e){
+          const m = raw.match(/\{[\s\S]*\}/);
+          if (m){ obj = JSON.parse(m[0]); }
+        }
+        if (!obj || !Array.isArray(obj.lines)) throw new Error("Invalid JSON s
