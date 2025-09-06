@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>ตัวแปลไฟล์ .txt (Gemini) — v9.5 Sorted List</title>
+<title>ตัวแปลไฟล์ .txt (Gemini) — v12 Definitive Edition</title>
 <!-- Add Font Awesome for Icons -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
@@ -11,7 +11,7 @@
 
   :root{
     --bg: #111827; --card: #1f2937; --fg: #d1d5db; --muted: #9ca3af; --line: #374151;
-    --accent: #3b82f6; --accent-hover: #60a5fa; --ok: #34d399; --err: #f87171;
+    --accent: #3b82f6; --accent-hover: #60afa; --ok: #34d399; --err: #f87171;
     --font-family: 'Sarabun', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
   }
   *{box-sizing:border-box}
@@ -72,17 +72,38 @@
     border-radius:10px; padding:12px; font-size:13px; color:var(--muted);
     max-height:200px; overflow:auto; margin-top: 16px;
   }
-  .toolbar{display:flex; flex-wrap:wrap; gap:10px; align-items:center;}
+  .toolbar{display:flex; flex-wrap:wrap; gap:16px; align-items:center;}
   .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
-  .split{display:grid;grid-template-columns:1fr 1fr;gap:12px;height:65vh; margin-top: 16px;}
+  
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:12px; margin-top: 16px;}
   .pane h3{margin:0 0 8px; font-size:16px; color:var(--muted); font-weight: 500;}
-  .grid{position:relative;height:100%;overflow:auto;border:1px solid var(--line);border-radius:12px;background:#111827}
-  .table{min-width:600px}
-  .rowline{display:grid;grid-template-columns:64px 1fr;border-bottom:1px solid #2b3546;align-items:center}
+  .grid{position:relative; overflow:auto;border:1px solid var(--line);border-radius:12px;background:#111827; min-height: 40vh; max-height: 70vh;}
+  
+  .table {
+    min-width: 100%;
+    width: max-content; /* This is the key for no-wrap mode */
+  }
+  .grid.text-wrap .table {
+    width: 100%; /* Override for wrap mode */
+  }
+
+  .rowline{display:grid;grid-template-columns:64px auto;border-bottom:1px solid #2b3546;align-items:stretch}
   .rowline:nth-child(even){background:#1f2937}
-  .lineNo{padding:6px 8px;border-right:1px solid #2b3546;color:#9ca3af;text-align:right;white-space:nowrap}
-  .cell div[contenteditable]{padding:6px 12px;min-height:30px;outline:none;white-space:pre;overflow:auto}
-  .fixed .cell div[contenteditable]{line-height:1.6;height:1.6em;overflow-y:hidden;overflow-x:auto}
+  .lineNo{padding:8px 8px 8px 0;border-right:1px solid #2b3546;color:#9ca3af;text-align:right;white-space:nowrap;user-select:none;}
+  
+  .cell div[contenteditable]{
+      padding:8px 12px;
+      min-height:34px;
+      outline:none;
+      white-space: pre; /* Default behavior is no-wrap */
+  }
+  .grid.text-wrap .cell div[contenteditable]{
+    white-space: pre-wrap; /* Override for wrap mode */
+    word-break: break-all;
+  }
+  .fixed .cell div[contenteditable]{
+    line-height: 1.6;
+  }
 
   .help{font-size:13px;color:var(--muted); margin-top: 16px;}
   .help-text{font-size: 12px; color: var(--muted); margin-top: 4px;}
@@ -95,7 +116,7 @@
 <body>
 <div class="wrap">
   <header>
-    <h1><i class="fa-solid fa-language" style="color:var(--accent)"></i> ตัวแปลไฟล์ .txt จำนวนมาก <span class="tag">v9.5 Final</span></h1>
+    <h1><i class="fa-solid fa-language" style="color:var(--accent)"></i> ตัวแปลไฟล์ .txt จำนวนมาก <span class="tag">v12 Definitive Edition</span></h1>
     <p class="muted">แปลไฟล์ข้อความโดยยังคงโครงสร้างเดิมแบบบรรทัดต่อบรรทัด (1:1) ขับเคลื่อนโดย Gemini</p>
   </header>
 
@@ -112,7 +133,7 @@
     <div class="grid-cols-2" style="margin-top:16px">
       <div>
         <label for="model">Model</label>
-        <input id="model" type="text" value="gemini-1.5-flash-latest">
+        <input id="model" type="text" value="gemini-2.5-flash">
       </div>
       <div class="grid-cols-2">
           <div>
@@ -126,7 +147,6 @@
       </div>
     </div>
   </div>
-
   <div class="card">
     <h2><i class="fa-solid fa-file-lines"></i>2. จัดการไฟล์และกระบวนการ</h2>
     <div class="grid-cols-2">
@@ -191,8 +211,6 @@
             </div>
         </div>
     </div>
-
-
     <div class="filelist" id="filelist"></div>
     <div class="status mono" id="status">สถานะการทำงานจะแสดงที่นี่...</div>
   </div>
@@ -200,8 +218,10 @@
   <div id="editor-section" class="card hidden">
     <h2><i class="fa-solid fa-pen-to-square"></i>3. แก้ไขและดาวน์โหลด</h2>
     <div class="toolbar">
-      <label><input type="checkbox" id="syncScroll" checked> ซิงค์การเลื่อน</label>
+      <label><input type="checkbox" id="wrapText" checked> ตัดข้อความ</label>
       <label><input type="checkbox" id="fixedRows" checked> ความสูงบรรทัดคงที่</label>
+      <label><input type="checkbox" id="syncScrollV" checked> ซิงค์แนวตั้ง</label>
+      <label><input type="checkbox" id="syncScrollH" checked> ซิงค์แนวนอน</label>
       <div style="flex-grow: 1;"></div>
       <button class="secondary" id="openSelected" disabled><i class="fa-solid fa-folder-open"></i>เปิดไฟล์ที่เลือก</button>
       <button id="saveEditsBtn" class="secondary" disabled><i class="fa-solid fa-save"></i>บันทึกการแก้ไข</button>
@@ -267,8 +287,10 @@
     gridRight: document.getElementById('gridRight'),
     tableLeft: document.getElementById('tableLeft'),
     tableRight: document.getElementById('tableRight'),
-    syncScroll: document.getElementById('syncScroll'),
+    wrapText: document.getElementById('wrapText'),
     fixedRows: document.getElementById('fixedRows'),
+    syncScrollV: document.getElementById('syncScrollV'),
+    syncScrollH: document.getElementById('syncScrollH'),
     checkKeyBtn: document.getElementById('checkKeyBtn'),
     checkKeyResult: document.getElementById('checkKeyResult'),
     customSettings: document.getElementById('custom-settings'),
@@ -291,19 +313,12 @@
   }
   function clearLog(){ els.status.textContent = "สถานะการทำงานจะแสดงที่นี่..."; }
 
-  // **** CHANGED: Added automatic sorting to the rendering function ****
   function renderFileList(){
-    // Store the name of the selected file to preserve selection after sorting
     const selectedFileName = selectedIndex > -1 ? filesState[selectedIndex].name : null;
-    
-    // Sort the filesState array alphabetically by name
     filesState.sort((a, b) => a.name.localeCompare(b.name));
-
-    // If a file was selected, find its new index in the sorted array
     if (selectedFileName) {
         selectedIndex = filesState.findIndex(f => f.name === selectedFileName);
     }
-
     els.filelist.innerHTML = "";
     if (!filesState.length){
       els.filelist.innerHTML = '<div class="fileitem" style="cursor:default;"><div class="fileitem-name"><span>ยังไม่มีไฟล์</span><span class="meta">กด "เพิ่มไฟล์" เพื่อเริ่มต้น</span></div></div>';
@@ -311,26 +326,19 @@
         filesState.forEach((f, idx) => {
         const row = document.createElement('div');
         row.className = 'fileitem';
-        if (idx === selectedIndex) {
-            row.classList.add('selected');
-        }
-
+        if (idx === selectedIndex) row.classList.add('selected');
         const nameDiv = document.createElement('div');
         nameDiv.className = 'fileitem-name';
-
         const nameSpan = document.createElement('span');
         nameSpan.className = 'name';
         nameSpan.textContent = f.name;
-
         const metaSpan = document.createElement('span');
         metaSpan.className = 'meta';
         const meta = `(${(f.size/1024).toFixed(1)} KB)`;
         const stat = f.translatedLines ? ' — ✅ แปลแล้ว' : (f.lines ? ` — ${f.lines.length} บรรทัด` : '');
         metaSpan.textContent = `${meta}${stat}`;
-
         nameDiv.appendChild(nameSpan);
         nameDiv.appendChild(metaSpan);
-
         const rm = document.createElement('button');
         rm.className = 'secondary';
         rm.innerHTML = '<i class="fa-solid fa-times"></i>';
@@ -342,14 +350,11 @@
                 selectedIndex = -1;
                 els.editorSection.classList.add('hidden');
             }
-            // No need to adjust selectedIndex here because renderFileList will recalculate it
             renderFileList();
         });
-
         row.appendChild(nameDiv);
         row.appendChild(rm);
         els.filelist.appendChild(row);
-
         row.addEventListener('click', () => {
             selectedIndex = idx;
             renderFileList();
@@ -408,36 +413,88 @@
     els.editorSection.classList.add('hidden');
   });
 
-  function applyFixedRows(){
-    const on = els.fixedRows.checked;
-    [els.tableLeft, els.tableRight].forEach(t => { t.classList.toggle('fixed', on); });
+  function syncAllRowHeights() {
+    const leftRows = els.tableLeft.children;
+    const rightRows = els.tableRight.children;
+    const n = Math.min(leftRows.length, rightRows.length);
+    if (n === 0) return;
+
+    requestAnimationFrame(() => {
+        for (let i = 0; i < n; i++) {
+            leftRows[i].style.height = 'auto';
+            rightRows[i].style.height = 'auto';
+        }
+
+        for (let i = 0; i < n; i++) {
+            const maxHeight = Math.max(leftRows[i].offsetHeight, rightRows[i].offsetHeight);
+            leftRows[i].style.height = `${maxHeight}px`;
+            rightRows[i].style.height = `${maxHeight}px`;
+        }
+    });
   }
-  els.fixedRows.addEventListener('change', applyFixedRows);
+
+  function applyEditorViewSettings() {
+    const grids = [els.gridLeft, els.gridRight];
+    grids.forEach(g => g.classList.toggle('text-wrap', els.wrapText.checked));
+    
+    const tables = [els.tableLeft, els.tableRight];
+    tables.forEach(t => t.classList.toggle('fixed', els.fixedRows.checked));
+    syncAllRowHeights();
+  }
+  els.wrapText.addEventListener('change', applyEditorViewSettings);
+  els.fixedRows.addEventListener('change', applyEditorViewSettings);
 
   function buildTables(srcLines, dstLines){
     const n = srcLines.length;
-    const paddedDst = dstLines.slice(0, n);
-    if (paddedDst.length < n){
-      for (let i=paddedDst.length; i<n; i++) paddedDst.push("");
+    const paddedDst = [...dstLines];
+    while (paddedDst.length < n) {
+        paddedDst.push("");
     }
-    els.tableLeft.innerHTML = ""; els.tableRight.innerHTML = "";
-    for (let i=0;i<n;i++){
-      const lrow = document.createElement('div'); lrow.className = 'rowline';
-      const lno = document.createElement('div'); lno.className='lineNo mono'; lno.textContent = (i+1);
-      const lcell = document.createElement('div'); lcell.className='cell';
-      const ldiv = document.createElement('div'); ldiv.textContent = (srcLines[i] ?? ""); ldiv.className='mono';
-      ldiv.setAttribute('contenteditable','false');
-      lcell.appendChild(ldiv); lrow.appendChild(lno); lrow.appendChild(lcell); els.tableLeft.appendChild(lrow);
+    
+    els.tableLeft.innerHTML = ""; 
+    els.tableRight.innerHTML = "";
 
-      const rrow = document.createElement('div'); rrow.className = 'rowline';
-      const rno = document.createElement('div'); rno.className='lineNo mono'; rno.textContent = (i+1);
-      const rcell = document.createElement('div'); rcell.className='cell';
-      const rdiv = document.createElement('div'); rdiv.textContent = (paddedDst[i] ?? ""); rdiv.className='mono';
-      rdiv.setAttribute('contenteditable','true');
-      rcell.appendChild(rdiv); rrow.appendChild(rno); rrow.appendChild(rcell); els.tableRight.appendChild(rrow);
+    const srcFrag = document.createDocumentFragment();
+    const dstFrag = document.createDocumentFragment();
+
+    for (let i = 0; i < n; i++) {
+        const lrow = document.createElement('div'); 
+        lrow.className = 'rowline';
+        const lno = document.createElement('div'); 
+        lno.className = 'lineNo mono'; 
+        lno.textContent = i + 1;
+        const lcell = document.createElement('div'); 
+        lcell.className = 'cell';
+        const ldiv = document.createElement('div'); 
+        ldiv.textContent = srcLines[i] ?? ""; 
+        ldiv.className = 'mono';
+        ldiv.setAttribute('contenteditable', 'false');
+        lcell.appendChild(ldiv); 
+        lrow.appendChild(lno); 
+        lrow.appendChild(lcell); 
+        srcFrag.appendChild(lrow);
+
+        const rrow = document.createElement('div'); 
+        rrow.className = 'rowline';
+        const rno = document.createElement('div'); 
+        rno.className = 'lineNo mono'; 
+        rno.textContent = i + 1;
+        const rcell = document.createElement('div'); 
+        rcell.className = 'cell';
+        const rdiv = document.createElement('div'); 
+        rdiv.textContent = paddedDst[i] ?? ""; 
+        rdiv.className = 'mono';
+        rdiv.setAttribute('contenteditable', 'true');
+        rcell.appendChild(rdiv); 
+        rrow.appendChild(rno); 
+        rrow.appendChild(rcell); 
+        dstFrag.appendChild(rrow);
     }
+    els.tableLeft.appendChild(srcFrag);
+    els.tableRight.appendChild(dstFrag);
+    
     els.editorSection.classList.remove('hidden');
-    applyFixedRows();
+    applyEditorViewSettings();
   }
 
   function getRightLinesFromDOM(){
@@ -447,10 +504,8 @@
 
   function saveCurrentEdits() {
     if (selectedIndex < 0 || !filesState[selectedIndex]) return;
-    
     filesState[selectedIndex].translatedLines = getRightLinesFromDOM();
     log(`บันทึกการแก้ไขสำหรับไฟล์: ${filesState[selectedIndex].name}`);
-
     const btn = els.saveEditsBtn;
     btn.innerHTML = '<i class="fa-solid fa-check"></i> บันทึกแล้ว!';
     btn.classList.add('saved');
@@ -461,35 +516,38 @@
   }
   els.saveEditsBtn.addEventListener('click', saveCurrentEdits);
 
+  const SYSTEM_RULES = `You are a line-locked translation tool. You must follow these rules strictly:
+- Input is a JSON object: {"lines":[...]} where each item is a line from the source file.
+- You must respond with a valid JSON object ONLY, matching this schema: {"lines":["...", "..."]}.
+- The number of items in the output "lines" array MUST be exactly the same as the input "lines" array (1:1 mapping).
+- Preserve blank lines: if an input line is an empty string, you MUST return an empty string at the same position in the output array.
+- Do not merge lines. Do not split lines.
+- Do not add line numbers, explanations, or any text outside of the JSON object. Do not use Markdown code blocks.
+- Keep placeholders like {name}, <tag>, %s, {0} exactly as they are in the translated text.
+`;
   function makeClient(){
     const key = els.apiKey.value.trim();
     if (!key){ throw new Error("กรุณาใส่ Gemini API Key"); }
     const genAI = new GoogleGenerativeAI(key);
     const modelName = els.model.value.trim() || "gemini-1.5-flash-latest";
-
     const generationConfig = {
       responseMimeType: "application/json",
       responseSchema: { type: "object", properties: { lines: { type: "array", items: { type: "string" } } }, required: ["lines"] },
     };
-
     const mode = document.querySelector('input[name="rateLimitMode"]:checked').value;
     if(mode === 'custom'){
         const temp = parseFloat(els.customTemp.value);
         if(!isNaN(temp)) generationConfig.temperature = temp;
-        
         const topK = parseInt(els.customTopK.value, 10);
         if(!isNaN(topK)) generationConfig.topK = topK;
-
         const topP = parseFloat(els.customTopP.value);
         if(!isNaN(topP)) generationConfig.topP = topP;
     } else {
         generationConfig.temperature = 0;
     }
-
     const model = genAI.getGenerativeModel({ model: modelName, generationConfig });
     return {genAI, model, modelName};
   }
-
   els.checkKeyBtn.addEventListener('click', async ()=>{
     els.checkKeyResult.textContent = "กำลังตรวจสอบ..."; els.checkKeyResult.className = "muted";
     try{
@@ -502,17 +560,6 @@
       els.checkKeyResult.textContent = "✗ " + (e.message || "ตรวจสอบไม่สำเร็จ"); els.checkKeyResult.className = "err";
     }
   });
-
-  const SYSTEM_RULES = `You are a line-locked translation tool. You must follow these rules strictly:
-- Input is a JSON object: {"lines":[...]} where each item is a line from the source file.
-- You must respond with a valid JSON object ONLY, matching this schema: {"lines":["...", "..."]}.
-- The number of items in the output "lines" array MUST be exactly the same as the input "lines" array (1:1 mapping).
-- Preserve blank lines: if an input line is an empty string, you MUST return an empty string at the same position in the output array.
-- Do not merge lines. Do not split lines.
-- Do not add line numbers, explanations, or any text outside of the JSON object. Do not use Markdown code blocks.
-- Keep placeholders like {name}, <tag>, %s, {0} exactly as they are in the translated text.
-`;
-
   async function translateChunk(model, chunk, src, tgt, retries){
     const prompt = `${SYSTEM_RULES}
 Translate the text lines from ${src} to ${tgt} for the following JSON input:
@@ -539,7 +586,6 @@ ${JSON.stringify({lines: chunk})}`;
     }
     return chunk.map(() => `[Translation Failed]`);
   }
-
   async function translateFile(model, fileObj, src, tgt, batchSize, retries, delayMs){
     if (!fileObj.lines){
       const text = await readFileDecoded(fileObj.file);
@@ -553,7 +599,6 @@ ${JSON.stringify({lines: chunk})}`;
       log(`• ${fileObj.name}: แปลบรรทัด ${i+1}-${Math.min(i+chunk.length, lines.length)}...`);
       const got = await translateChunk(model, chunk, src, tgt, retries);
       for (let k=0;k<chunk.length;k++){ out[i+k] = got[k] ?? ""; }
-
       if (delayMs > 0 && i + batchSize < lines.length) {
         log(`  - หน่วงเวลา ${delayMs}ms...`);
         await new Promise(r => setTimeout(r, delayMs));
@@ -561,7 +606,6 @@ ${JSON.stringify({lines: chunk})}`;
     }
     return out;
   }
-
   els.translateBtn.addEventListener('click', async ()=>{
     if (filesState.length===0) return alert("ยังไม่มีไฟล์ให้แปล");
     clearLog();
@@ -572,7 +616,6 @@ ${JSON.stringify({lines: chunk})}`;
       const batchSize = Math.max(1, parseInt(els.batch.value||"50",10));
       const retries = Math.max(0, parseInt(els.retries.value||"2",10));
       const rateLimitMode = document.querySelector('input[name="rateLimitMode"]:checked').value;
-
       let delayMs = 0;
       let modeDesc = 'เร็ว (ไม่มีหน่วงเวลา)';
       if (rateLimitMode === 'free') {
@@ -582,7 +625,6 @@ ${JSON.stringify({lines: chunk})}`;
         delayMs = parseInt(els.customDelay.value, 10) || 0;
         modeDesc = `กำหนดเอง (หน่วงเวลา ${delayMs}ms/ชุด)`;
       }
-
       const {model, modelName} = makeClient();
       log(`ใช้โมเดล: ${modelName}`);
       log(`โหมดการทำงาน: ${modeDesc}`);
@@ -590,7 +632,6 @@ ${JSON.stringify({lines: chunk})}`;
           const genConfig = model.generationConfig;
           log(`  - Custom Config: temp=${genConfig.temperature}, topK=${genConfig.topK ?? 'auto'}, topP=${genConfig.topP ?? 'auto'}`);
       }
-      
       let translatedCount = 0;
       for (const f of filesState){
         if(f.translatedLines) continue;
@@ -624,11 +665,8 @@ ${JSON.stringify({lines: chunk})}`;
 
   els.downloadRight.addEventListener('click', ()=>{
     if (selectedIndex < 0) return;
-    const f = filesState[selectedIndex];
-    if (!f || !f.translatedLines) return;
-    
     saveCurrentEdits();
-
+    const f = filesState[selectedIndex];
     const blob = new Blob([fromLines(f.translatedLines)], {type:"text/plain;charset=utf-8"});
     const a = document.createElement('a');
     const name = f.name.replace(/\.txt$/i,'') + `.${els.tgtLang.value}.txt`;
@@ -643,11 +681,9 @@ ${JSON.stringify({lines: chunk})}`;
   els.downloadZipAll.addEventListener('click', async ()=>{
     if (filesState.every(x=>!x.translatedLines)) return;
     const zip = new JSZip();
-    
     if(selectedIndex !== -1 && filesState[selectedIndex]?.translatedLines) {
       saveCurrentEdits();
     }
-
     for (const f of filesState){
       if (f.translatedLines){
         const blob = new Blob([fromLines(f.translatedLines)], {type:"text/plain;charset=utf-8"});
@@ -667,9 +703,11 @@ ${JSON.stringify({lines: chunk})}`;
     const L = els.gridLeft, R = els.gridRight;
     let lock = false;
     function sync(a,b){
-      if (!els.syncScroll.checked) return;
       if (lock) return;
-      lock = true; b.scrollTop = a.scrollTop; b.scrollLeft = a.scrollLeft; lock = false;
+      lock = true;
+      if (els.syncScrollV.checked) b.scrollTop = a.scrollTop;
+      if (els.syncScrollH.checked) b.scrollLeft = a.scrollLeft;
+      lock = false;
     }
     L.addEventListener('scroll', ()=>sync(L,R));
     R.addEventListener('scroll', ()=>sync(R,L));
@@ -685,8 +723,32 @@ ${JSON.stringify({lines: chunk})}`;
     });
   });
 
-  // Initial render on page load
+  let resizeTimeout;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(syncAllRowHeights, 100);
+  });
+
+  els.gridRight.addEventListener('input', (e) => {
+    const rowElement = e.target.closest('.rowline');
+    if (!rowElement) return;
+    const rowIndex = Array.from(rowElement.parentNode.children).indexOf(rowElement);
+    if (rowIndex > -1) {
+        const leftRow = els.tableLeft.children[rowIndex];
+        if (leftRow) {
+            requestAnimationFrame(() => {
+                rowElement.style.height = 'auto';
+                leftRow.style.height = 'auto';
+                const maxHeight = Math.max(rowElement.offsetHeight, leftRow.offsetHeight);
+                rowElement.style.height = `${maxHeight}px`;
+                leftRow.style.height = `${maxHeight}px`;
+            });
+        }
+    }
+  });
+
   renderFileList();
+  applyEditorViewSettings();
 
 </script>
 </body>
