@@ -71,17 +71,38 @@
     border-radius:10px; padding:12px; font-size:13px; color:var(--muted);
     max-height:200px; overflow:auto; margin-top: 16px;
   }
-  .toolbar{display:flex; flex-wrap:wrap; gap:10px; align-items:center;}
+  .toolbar{display:flex; flex-wrap:wrap; gap:16px; align-items:center;}
   .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
-  .split{display:grid;grid-template-columns:1fr 1fr;gap:12px;height:65vh; margin-top: 16px;}
+  
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:12px; margin-top: 16px;}
   .pane h3{margin:0 0 8px; font-size:16px; color:var(--muted); font-weight: 500;}
-  .grid{position:relative;height:100%;overflow:auto;border:1px solid var(--line);border-radius:12px;background:#111827}
-  .table{min-width:600px}
-  .rowline{display:grid;grid-template-columns:64px 1fr;border-bottom:1px solid #2b3546;align-items:center}
+  .grid{position:relative; overflow:auto;border:1px solid var(--line);border-radius:12px;background:#111827; min-height: 40vh; max-height: 70vh;}
+  
+  .table {
+    min-width: 100%;
+    width: max-content;
+  }
+  .grid.text-wrap .table {
+    width: 100%;
+  }
+
+  .rowline{display:grid;grid-template-columns:64px auto;border-bottom:1px solid #2b3546;align-items:stretch}
   .rowline:nth-child(even){background:#1f2937}
-  .lineNo{padding:6px 8px;border-right:1px solid #2b3546;color:#9ca3af;text-align:right;white-space:nowrap}
-  .cell div[contenteditable]{padding:6px 12px;min-height:30px;outline:none;white-space:pre;overflow:auto}
-  .fixed .cell div[contenteditable]{line-height:1.6;height:1.6em;overflow-y:hidden;overflow-x:auto}
+  .lineNo{padding:8px 8px 8px 0;border-right:1px solid #2b3546;color:#9ca3af;text-align:right;white-space:nowrap;user-select:none;}
+  
+  .cell div[contenteditable]{
+      padding:8px 12px;
+      min-height:34px;
+      outline:none;
+      white-space: pre;
+  }
+  .grid.text-wrap .cell div[contenteditable]{
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  .fixed .cell div[contenteditable]{
+    line-height: 1.6;
+  }
 
   .help{font-size:13px;color:var(--muted); margin-top: 16px;}
   .tag{font-size:14px;color:#9ca3af; font-weight: 400;}
@@ -156,8 +177,10 @@
   <div id="editor-section" class="card hidden">
     <h2><i class="fa-solid fa-pen-to-square"></i>3. แก้ไขและดาวน์โหลด</h2>
     <div class="toolbar">
-      <label><input type="checkbox" id="syncScroll" checked> ซิงค์การเลื่อน</label>
+      <label><input type="checkbox" id="wrapText" checked> ตัดข้อความ</label>
       <label><input type="checkbox" id="fixedRows" checked> ความสูงบรรทัดคงที่</label>
+      <label><input type="checkbox" id="syncScrollV" checked> ซิงค์แนวตั้ง</label>
+      <label><input type="checkbox" id="syncScrollH" checked> ซิงค์แนวนอน</label>
       <div style="flex-grow: 1;"></div>
       <button class="secondary" id="openSelected" disabled><i class="fa-solid fa-folder-open"></i>เปิดไฟล์ที่เลือก</button>
       <button id="saveEditsBtn" class="secondary" disabled><i class="fa-solid fa-save"></i>บันทึกการแก้ไข</button>
@@ -189,7 +212,7 @@
     <iframe 
        src="https://thommongkol.github.io/live-counter/Lightning_Flash.html"
        width="250"
-       height="80"
+       height="90"
        frameborder="0"
        scrolling="no"
        style="border:none; overflow:hidden;">
@@ -222,8 +245,10 @@
     gridRight: document.getElementById('gridRight'),
     tableLeft: document.getElementById('tableLeft'),
     tableRight: document.getElementById('tableRight'),
-    syncScroll: document.getElementById('syncScroll'),
+    wrapText: document.getElementById('wrapText'),
     fixedRows: document.getElementById('fixedRows'),
+    syncScrollV: document.getElementById('syncScrollV'),
+    syncScrollH: document.getElementById('syncScrollH'),
     checkKeyBtn: document.getElementById('checkKeyBtn'),
     checkKeyResult: document.getElementById('checkKeyResult'),
   };
@@ -241,6 +266,11 @@
   function clearLog(){ els.status.textContent = "สถานะการทำงานจะแสดงที่นี่..."; }
 
   function renderFileList(){
+    const selectedFileName = selectedIndex > -1 ? filesState[selectedIndex].name : null;
+    filesState.sort((a, b) => a.name.localeCompare(b.name));
+    if (selectedFileName) {
+        selectedIndex = filesState.findIndex(f => f.name === selectedFileName);
+    }
     els.filelist.innerHTML = "";
     if (!filesState.length){
       els.filelist.innerHTML = '<div class="fileitem" style="cursor:default;"><div class="fileitem-name"><span>ยังไม่มีไฟล์</span><span class="meta">กด "เพิ่มไฟล์" เพื่อเริ่มต้น</span></div></div>';
@@ -248,23 +278,18 @@
         filesState.forEach((f, idx) => {
         const row = document.createElement('div');
         row.className = 'fileitem';
-        if (idx === selectedIndex) {
-            row.classList.add('selected');
-        }
-
+        if (idx === selectedIndex) row.classList.add('selected');
+        
         const nameDiv = document.createElement('div');
         nameDiv.className = 'fileitem-name';
-
         const nameSpan = document.createElement('span');
         nameSpan.className = 'name';
         nameSpan.textContent = f.name;
-
         const metaSpan = document.createElement('span');
         metaSpan.className = 'meta';
         const meta = `(${(f.size/1024).toFixed(1)} KB)`;
         const stat = f.translatedLines ? ' — ✅ แปลแล้ว' : (f.lines ? ` — ${f.lines.length} บรรทัด` : '');
         metaSpan.textContent = `${meta}${stat}`;
-
         nameDiv.appendChild(nameSpan);
         nameDiv.appendChild(metaSpan);
 
@@ -292,11 +317,9 @@
             selectedIndex = idx;
             renderFileList();
             if (filesState[idx].translatedLines) {
-                els.openSelected.disabled = false;
                 els.openSelected.click();
             } else {
                 els.editorSection.classList.add('hidden');
-                els.openSelected.disabled = true;
             }
         });
       });
@@ -348,36 +371,88 @@
     els.editorSection.classList.add('hidden');
   });
 
-  function applyFixedRows(){
-    const on = els.fixedRows.checked;
-    [els.tableLeft, els.tableRight].forEach(t => { t.classList.toggle('fixed', on); });
+  function syncAllRowHeights() {
+    const leftRows = els.tableLeft.children;
+    const rightRows = els.tableRight.children;
+    const n = Math.min(leftRows.length, rightRows.length);
+    if (n === 0) return;
+
+    requestAnimationFrame(() => {
+        for (let i = 0; i < n; i++) {
+            leftRows[i].style.height = 'auto';
+            rightRows[i].style.height = 'auto';
+        }
+
+        for (let i = 0; i < n; i++) {
+            const maxHeight = Math.max(leftRows[i].offsetHeight, rightRows[i].offsetHeight);
+            leftRows[i].style.height = `${maxHeight}px`;
+            rightRows[i].style.height = `${maxHeight}px`;
+        }
+    });
   }
-  els.fixedRows.addEventListener('change', applyFixedRows);
+
+  function applyEditorViewSettings() {
+    const grids = [els.gridLeft, els.gridRight];
+    grids.forEach(g => g.classList.toggle('text-wrap', els.wrapText.checked));
+    
+    const tables = [els.tableLeft, els.tableRight];
+    tables.forEach(t => t.classList.toggle('fixed', els.fixedRows.checked));
+    syncAllRowHeights();
+  }
+  els.wrapText.addEventListener('change', applyEditorViewSettings);
+  els.fixedRows.addEventListener('change', applyEditorViewSettings);
 
   function buildTables(srcLines, dstLines){
     const n = srcLines.length;
-    const paddedDst = dstLines.slice(0, n);
-    if (paddedDst.length < n){
-      for (let i=paddedDst.length; i<n; i++) paddedDst.push("");
+    const paddedDst = [...dstLines];
+    while (paddedDst.length < n) {
+        paddedDst.push("");
     }
-    els.tableLeft.innerHTML = ""; els.tableRight.innerHTML = "";
-    for (let i=0;i<n;i++){
-      const lrow = document.createElement('div'); lrow.className = 'rowline';
-      const lno = document.createElement('div'); lno.className='lineNo mono'; lno.textContent = (i+1);
-      const lcell = document.createElement('div'); lcell.className='cell';
-      const ldiv = document.createElement('div'); ldiv.textContent = (srcLines[i] ?? ""); ldiv.className='mono';
-      ldiv.setAttribute('contenteditable','false');
-      lcell.appendChild(ldiv); lrow.appendChild(lno); lrow.appendChild(lcell); els.tableLeft.appendChild(lrow);
+    
+    els.tableLeft.innerHTML = ""; 
+    els.tableRight.innerHTML = "";
 
-      const rrow = document.createElement('div'); rrow.className = 'rowline';
-      const rno = document.createElement('div'); rno.className='lineNo mono'; rno.textContent = (i+1);
-      const rcell = document.createElement('div'); rcell.className='cell';
-      const rdiv = document.createElement('div'); rdiv.textContent = (paddedDst[i] ?? ""); rdiv.className='mono';
-      rdiv.setAttribute('contenteditable','true');
-      rcell.appendChild(rdiv); rrow.appendChild(rno); rrow.appendChild(rcell); els.tableRight.appendChild(rrow);
+    const srcFrag = document.createDocumentFragment();
+    const dstFrag = document.createDocumentFragment();
+
+    for (let i = 0; i < n; i++) {
+        const lrow = document.createElement('div'); 
+        lrow.className = 'rowline';
+        const lno = document.createElement('div'); 
+        lno.className = 'lineNo mono'; 
+        lno.textContent = i + 1;
+        const lcell = document.createElement('div'); 
+        lcell.className = 'cell';
+        const ldiv = document.createElement('div'); 
+        ldiv.textContent = srcLines[i] ?? ""; 
+        ldiv.className = 'mono';
+        ldiv.setAttribute('contenteditable', 'false');
+        lcell.appendChild(ldiv); 
+        lrow.appendChild(lno); 
+        lrow.appendChild(lcell); 
+        srcFrag.appendChild(lrow);
+
+        const rrow = document.createElement('div'); 
+        rrow.className = 'rowline';
+        const rno = document.createElement('div'); 
+        rno.className = 'lineNo mono'; 
+        rno.textContent = i + 1;
+        const rcell = document.createElement('div'); 
+        rcell.className = 'cell';
+        const rdiv = document.createElement('div'); 
+        rdiv.textContent = paddedDst[i] ?? ""; 
+        rdiv.className = 'mono';
+        rdiv.setAttribute('contenteditable', 'true');
+        rcell.appendChild(rdiv); 
+        rrow.appendChild(rno); 
+        rrow.appendChild(rcell); 
+        dstFrag.appendChild(rrow);
     }
+    els.tableLeft.appendChild(srcFrag);
+    els.tableRight.appendChild(dstFrag);
+    
     els.editorSection.classList.remove('hidden');
-    applyFixedRows();
+    applyEditorViewSettings();
   }
 
   function getRightLinesFromDOM(){
@@ -476,7 +551,6 @@
         try{ 
           obj = JSON.parse(raw);
         } catch(e){
-          // Try to fix JSON if it's wrapped in markdown
           const match = raw.match(/```json\n([\s\S]+?)\n```/);
           if (match && match[1]){
             raw = match[1];
@@ -559,63 +633,89 @@
   });
 
   els.openSelected.addEventListener('click', () => {
-    if (selectedIndex < 0 || !filesState[selectedIndex] || !filesState[selectedIndex].translatedLines) return;
+    if (selectedIndex < 0 || !filesState[selectedIndex] || !filesState[selectedIndex].lines || !filesState[selectedIndex].translatedLines) return;
     const { lines, translatedLines, name } = filesState[selectedIndex];
     log(`เปิดไฟล์ใน Editor: ${name}`);
     buildTables(lines, translatedLines);
   });
 
   els.downloadRight.addEventListener('click', () => {
-    if (selectedIndex < 0 || !filesState[selectedIndex]) return;
-    saveCurrentEdits(); // Ensure latest edits are captured
-    const { translatedLines, name } = filesState[selectedIndex];
-    const content = fromLines(translatedLines);
-    const blob = new Blob([content], {type: "text/plain;charset=utf-8"});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = name.replace(/(\.txt)?$/, '_translated.txt');
-    a.click();
-    URL.revokeObjectURL(url);
-    log(`ดาวน์โหลดไฟล์: ${a.download}`);
+    if (selectedIndex < 0) return;
+    saveCurrentEdits();
+    const f = filesState[selectedIndex];
+    const blob = new Blob([fromLines(f.translatedLines)], {type:"text/plain;charset=utf-8"});
+    const a = document.createElement('a');
+    const name = f.name.replace(/\.txt$/i,'') + `.${els.tgtLang.value}.txt`;
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
   });
+
+  function safeName(name){ return name.replace(/[\\/:*?"<>|]/g, '_'); }
   
   els.downloadZipAll.addEventListener('click', async () => {
+    if (filesState.every(x=>!x.translatedLines)) return;
     const zip = new JSZip();
-    const translatedFiles = filesState.filter(f => f.translatedLines);
-    if(translatedFiles.length === 0) return;
-
-    log("กำลังสร้างไฟล์ ZIP...");
-    for (const fileState of translatedFiles){
-        const newName = fileState.name.replace(/(\.txt)?$/, '_translated.txt');
-        zip.file(newName, fromLines(fileState.translatedLines));
+    if(selectedIndex !== -1 && filesState[selectedIndex]?.translatedLines) {
+      saveCurrentEdits();
     }
-
+    for (const f of filesState){
+      if (f.translatedLines){
+        const blob = new Blob([fromLines(f.translatedLines)], {type:"text/plain;charset=utf-8"});
+        const name = f.name.replace(/\.txt$/i,'') + `.${els.tgtLang.value}.txt`;
+        zip.file(safeName(name), blob);
+      }
+    }
     const content = await zip.generateAsync({type:"blob"});
-    const url = URL.createObjectURL(content);
-    const a = document.createElement("a");
-    a.href = url;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(content);
     a.download = "translated_files.zip";
-    a.click();
-    URL.revokeObjectURL(url);
-    log("ดาวน์โหลดไฟล์ ZIP สำเร็จ");
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
   });
 
-  // Scroll Sync Logic
-  let isSyncing = false;
-  const sync = (e) => {
-    if (isSyncing) return;
-    isSyncing = true;
-    const other = e.target === els.gridLeft ? els.gridRight : els.gridLeft;
-    other.scrollTop = e.target.scrollTop;
-    other.scrollLeft = e.target.scrollLeft;
-    isSyncing = false;
-  };
-  els.gridLeft.addEventListener('scroll', () => { if (els.syncScroll.checked) sync({target: els.gridLeft}); });
-  els.gridRight.addEventListener('scroll', () => { if (els.syncScroll.checked) sync({target: els.gridRight}); });
+  (function attachScrollSync(){
+    const L = els.gridLeft, R = els.gridRight;
+    let lock = false;
+    function sync(a,b){
+      if (lock) return;
+      lock = true;
+      if (els.syncScrollV.checked) b.scrollTop = a.scrollTop;
+      if (els.syncScrollH.checked) b.scrollLeft = a.scrollLeft;
+      lock = false;
+    }
+    L.addEventListener('scroll', ()=>sync(L,R));
+    R.addEventListener('scroll', ()=>sync(R,L));
+  })();
 
-  // Init
+  let resizeTimeout;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(syncAllRowHeights, 100);
+  });
+
+  els.gridRight.addEventListener('input', (e) => {
+    const rowElement = e.target.closest('.rowline');
+    if (!rowElement) return;
+    const rowIndex = Array.from(rowElement.parentNode.children).indexOf(rowElement);
+    if (rowIndex > -1) {
+        const leftRow = els.tableLeft.children[rowIndex];
+        if (leftRow) {
+            requestAnimationFrame(() => {
+                rowElement.style.height = 'auto';
+                leftRow.style.height = 'auto';
+                const maxHeight = Math.max(rowElement.offsetHeight, leftRow.offsetHeight);
+                rowElement.style.height = `${maxHeight}px`;
+                leftRow.style.height = `${maxHeight}px`;
+            });
+        }
+    }
+  });
+
   renderFileList();
+  applyEditorViewSettings();
+
 </script>
 </body>
 </html>
