@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>ตัวแปลไฟล์ .txt (GPT) — v10.3 Optional Params</title>
+<title>ตัวแปลไฟล์ .txt (GPT) — v10.4 Final</title>
 <!-- Add Font Awesome for Icons -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
@@ -73,17 +73,38 @@
     border-radius:10px; padding:12px; font-size:13px; color:var(--muted);
     max-height:200px; overflow:auto; margin-top: 16px;
   }
-  .toolbar{display:flex; flex-wrap:wrap; gap:10px; align-items:center;}
+  .toolbar{display:flex; flex-wrap:wrap; gap:16px; align-items:center;}
   .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
-  .split{display:grid;grid-template-columns:1fr 1fr;gap:12px;height:65vh; margin-top: 16px;}
+  
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:12px; margin-top: 16px;}
   .pane h3{margin:0 0 8px; font-size:16px; color:var(--muted); font-weight: 500;}
-  .grid-editor{position:relative;height:100%;overflow:auto;border:1px solid var(--line);border-radius:12px;background:#111827}
-  .table{min-width:600px}
-  .rowline{display:grid;grid-template-columns:64px 1fr;border-bottom:1px solid #2b3546;align-items:center}
+  .grid-editor{position:relative; overflow:auto;border:1px solid var(--line);border-radius:12px;background:#111827; min-height: 40vh; max-height: 70vh;}
+  
+  .table {
+    min-width: 100%;
+    width: max-content;
+  }
+  .grid-editor.text-wrap .table {
+    width: 100%;
+  }
+
+  .rowline{display:grid;grid-template-columns:64px auto;border-bottom:1px solid #2b3546;align-items:stretch}
   .rowline:nth-child(even){background:#1f2937}
-  .lineNo{padding:6px 8px;border-right:1px solid #2b3546;color:#9ca3af;text-align:right;white-space:nowrap}
-  .cell div[contenteditable]{padding:6px 12px;min-height:30px;outline:none;white-space:pre;overflow:auto}
-  .fixed .cell div[contenteditable]{line-height:1.6;height:1.6em;overflow-y:hidden;overflow-x:auto}
+  .lineNo{padding:8px 8px 8px 0;border-right:1px solid #2b3546;color:#9ca3af;text-align:right;white-space:nowrap;user-select:none;}
+  
+  .cell div[contenteditable]{
+      padding:8px 12px;
+      min-height:34px;
+      outline:none;
+      white-space: pre;
+  }
+  .grid-editor.text-wrap .cell div[contenteditable]{
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  .fixed .cell div[contenteditable]{
+    line-height: 1.6;
+  }
 
   .help{font-size:13px;color:var(--muted); margin-top: 16px;}
   .tag{font-size:14px;color:#9ca3af; font-weight: 400;}
@@ -95,7 +116,7 @@
 <body>
 <div class="wrap">
   <header>
-    <h1><i class="fa-solid fa-language" style="color:var(--accent)"></i> ตัวแปลไฟล์ .txt จำนวนมาก <span class="tag">v10.3 GPT</span></h1>
+    <h1><i class="fa-solid fa-language" style="color:var(--accent)"></i> ตัวแปลไฟล์ .txt จำนวนมาก <span class="tag">v10.4 Final</span></h1>
     <p class="muted">แปลไฟล์ข้อความโดยยังคงโครงสร้างเดิมแบบบรรทัดต่อบรรทัด (1:1) ขับเคลื่อนโดย OpenAI GPT</p>
   </header>
 
@@ -167,8 +188,10 @@
   <div id="editor-section" class="card hidden">
     <h2><i class="fa-solid fa-pen-to-square"></i>3. แก้ไขและดาวน์โหลด</h2>
     <div class="toolbar">
-      <label><input type="checkbox" id="syncScroll" checked> ซิงค์การเลื่อน</label>
+      <label><input type="checkbox" id="wrapText" checked> ตัดข้อความ</label>
       <label><input type="checkbox" id="fixedRows" checked> ความสูงบรรทัดคงที่</label>
+      <label><input type="checkbox" id="syncScrollV" checked> ซิงค์แนวตั้ง</label>
+      <label><input type="checkbox" id="syncScrollH" checked> ซิงค์แนวนอน</label>
       <div style="flex-grow: 1;"></div>
       <button class="secondary" id="openSelected" disabled><i class="fa-solid fa-folder-open"></i>เปิดไฟล์ที่เลือก</button>
       <button id="saveEditsBtn" class="secondary" disabled><i class="fa-solid fa-save"></i>บันทึกการแก้ไข</button>
@@ -234,8 +257,10 @@
     gridRight: document.getElementById('gridRight'),
     tableLeft: document.getElementById('tableLeft'),
     tableRight: document.getElementById('tableRight'),
-    syncScroll: document.getElementById('syncScroll'),
+    wrapText: document.getElementById('wrapText'),
     fixedRows: document.getElementById('fixedRows'),
+    syncScrollV: document.getElementById('syncScrollV'),
+    syncScrollH: document.getElementById('syncScrollH'),
     checkKeyBtn: document.getElementById('checkKeyBtn'),
     checkKeyResult: document.getElementById('checkKeyResult'),
   };
@@ -358,36 +383,88 @@
     els.editorSection.classList.add('hidden');
   });
 
-  function applyFixedRows(){
-    const on = els.fixedRows.checked;
-    [els.tableLeft, els.tableRight].forEach(t => { t.classList.toggle('fixed', on); });
+  function syncAllRowHeights() {
+    const leftRows = els.tableLeft.children;
+    const rightRows = els.tableRight.children;
+    const n = Math.min(leftRows.length, rightRows.length);
+    if (n === 0) return;
+
+    requestAnimationFrame(() => {
+        for (let i = 0; i < n; i++) {
+            leftRows[i].style.height = 'auto';
+            rightRows[i].style.height = 'auto';
+        }
+
+        for (let i = 0; i < n; i++) {
+            const maxHeight = Math.max(leftRows[i].offsetHeight, rightRows[i].offsetHeight);
+            leftRows[i].style.height = `${maxHeight}px`;
+            rightRows[i].style.height = `${maxHeight}px`;
+        }
+    });
   }
-  els.fixedRows.addEventListener('change', applyFixedRows);
+
+  function applyEditorViewSettings() {
+    const grids = [els.gridLeft, els.gridRight];
+    grids.forEach(g => g.classList.toggle('text-wrap', els.wrapText.checked));
+    
+    const tables = [els.tableLeft, els.tableRight];
+    tables.forEach(t => t.classList.toggle('fixed', els.fixedRows.checked));
+    syncAllRowHeights();
+  }
+  els.wrapText.addEventListener('change', applyEditorViewSettings);
+  els.fixedRows.addEventListener('change', applyEditorViewSettings);
 
   function buildTables(srcLines, dstLines){
     const n = srcLines.length;
-    const paddedDst = dstLines.slice(0, n);
-    if (paddedDst.length < n){
-      for (let i=paddedDst.length; i<n; i++) paddedDst.push("");
+    const paddedDst = [...dstLines];
+    while (paddedDst.length < n) {
+        paddedDst.push("");
     }
-    els.tableLeft.innerHTML = ""; els.tableRight.innerHTML = "";
-    for (let i=0;i<n;i++){
-      const lrow = document.createElement('div'); lrow.className = 'rowline';
-      const lno = document.createElement('div'); lno.className='lineNo mono'; lno.textContent = (i+1);
-      const lcell = document.createElement('div'); lcell.className='cell';
-      const ldiv = document.createElement('div'); ldiv.textContent = (srcLines[i] ?? ""); ldiv.className='mono';
-      ldiv.setAttribute('contenteditable','false');
-      lcell.appendChild(ldiv); lrow.appendChild(lno); lrow.appendChild(lcell); els.tableLeft.appendChild(lrow);
+    
+    els.tableLeft.innerHTML = ""; 
+    els.tableRight.innerHTML = "";
 
-      const rrow = document.createElement('div'); rrow.className = 'rowline';
-      const rno = document.createElement('div'); rno.className='lineNo mono'; rno.textContent = (i+1);
-      const rcell = document.createElement('div'); rcell.className='cell';
-      const rdiv = document.createElement('div'); rdiv.textContent = (paddedDst[i] ?? ""); rdiv.className='mono';
-      rdiv.setAttribute('contenteditable','true');
-      rcell.appendChild(rdiv); rrow.appendChild(rno); rrow.appendChild(rcell); els.tableRight.appendChild(rrow);
+    const srcFrag = document.createDocumentFragment();
+    const dstFrag = document.createDocumentFragment();
+
+    for (let i = 0; i < n; i++) {
+        const lrow = document.createElement('div'); 
+        lrow.className = 'rowline';
+        const lno = document.createElement('div'); 
+        lno.className = 'lineNo mono'; 
+        lno.textContent = i + 1;
+        const lcell = document.createElement('div'); 
+        lcell.className = 'cell';
+        const ldiv = document.createElement('div'); 
+        ldiv.textContent = srcLines[i] ?? ""; 
+        ldiv.className = 'mono';
+        ldiv.setAttribute('contenteditable', 'false');
+        lcell.appendChild(ldiv); 
+        lrow.appendChild(lno); 
+        lrow.appendChild(lcell); 
+        srcFrag.appendChild(lrow);
+
+        const rrow = document.createElement('div'); 
+        rrow.className = 'rowline';
+        const rno = document.createElement('div'); 
+        rno.className = 'lineNo mono'; 
+        rno.textContent = i + 1;
+        const rcell = document.createElement('div'); 
+        rcell.className = 'cell';
+        const rdiv = document.createElement('div'); 
+        rdiv.textContent = paddedDst[i] ?? ""; 
+        rdiv.className = 'mono';
+        rdiv.setAttribute('contenteditable', 'true');
+        rcell.appendChild(rdiv); 
+        rrow.appendChild(rno); 
+        rrow.appendChild(rcell); 
+        dstFrag.appendChild(rrow);
     }
+    els.tableLeft.appendChild(srcFrag);
+    els.tableRight.appendChild(dstFrag);
+    
     els.editorSection.classList.remove('hidden');
-    applyFixedRows();
+    applyEditorViewSettings();
   }
 
   function getRightLinesFromDOM(){
@@ -536,8 +613,9 @@ ${JSON.stringify({lines: chunk})}`;
   }
 
   els.translateBtn.addEventListener('click', async ()=>{
-    if (filesState.length===0) return alert("ยังไม่มีไฟล์ให้แปล");
+    if (filesState.length === 0) return alert("ยังไม่มีไฟล์ให้แปล");
     clearLog();
+    els.translateBtn.disabled = true; // ### CHANGE: Disable button on start
     try {
       const apiKey = els.apiKey.value.trim();
       const modelName = els.model.value.trim() || "gpt-4o";
@@ -570,6 +648,8 @@ ${JSON.stringify({lines: chunk})}`;
       console.error(e);
       log("เกิดข้อผิดพลาดร้ายแรง: " + (e.message || e));
       alert("เกิดข้อผิดพลาดร้ายแรง:\n" + (e.message || e) + "\n\nโปรดตรวจสอบการตั้งค่า API");
+    } finally {
+      els.translateBtn.disabled = false; // ### CHANGE: Re-enable button on completion
     }
   });
 
@@ -625,15 +705,42 @@ ${JSON.stringify({lines: chunk})}`;
     const L = els.gridLeft, R = els.gridRight;
     let lock = false;
     function sync(a,b){
-      if (!els.syncScroll.checked) return;
       if (lock) return;
-      lock = true; b.scrollTop = a.scrollTop; b.scrollLeft = a.scrollLeft; lock = false;
+      lock = true;
+      if (els.syncScrollV.checked) b.scrollTop = a.scrollTop;
+      if (els.syncScrollH.checked) b.scrollLeft = a.scrollLeft;
+      lock = false;
     }
     L.addEventListener('scroll', ()=>sync(L,R));
     R.addEventListener('scroll', ()=>sync(R,L));
   })();
 
+  let resizeTimeout;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(syncAllRowHeights, 100);
+  });
+
+  els.gridRight.addEventListener('input', (e) => {
+    const rowElement = e.target.closest('.rowline');
+    if (!rowElement) return;
+    const rowIndex = Array.from(rowElement.parentNode.children).indexOf(rowElement);
+    if (rowIndex > -1) {
+        const leftRow = els.tableLeft.children[rowIndex];
+        if (leftRow) {
+            requestAnimationFrame(() => {
+                rowElement.style.height = 'auto';
+                leftRow.style.height = 'auto';
+                const maxHeight = Math.max(rowElement.offsetHeight, leftRow.offsetHeight);
+                rowElement.style.height = `${maxHeight}px`;
+                leftRow.style.height = `${maxHeight}px`;
+            });
+        }
+    }
+  });
+
   renderFileList();
+  applyEditorViewSettings();
 
 </script>
 </body>
