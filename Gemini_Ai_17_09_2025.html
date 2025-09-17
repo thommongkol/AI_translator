@@ -561,43 +561,69 @@
     }
   });
 
+  // ========== START: MODIFIED FUNCTION WITH RECURSIVE SPLITTING ==========
+  const MIN_CHUNK_SIZE_FOR_SPLIT = 10; // จะไม่แบ่ง chunk ที่เล็กกว่าหรือเท่ากับ 10 บรรทัด
+
   async function translateChunk(model, chunk, src, tgt, retries){
     const prompt = `${SYSTEM_RULES}
 Translate the text lines from ${src} to ${tgt} for the following JSON input:
 ${JSON.stringify({lines: chunk})}`;
-    for (let attempt=0; attempt<=retries; attempt++){
-      try{
+
+    for (let attempt = 0; attempt <= retries; attempt++){
+      try {
         const result = await model.generateContent(prompt);
         let raw = result.response.text();
         let obj = null;
-        try{ obj = JSON.parse(raw); }
+        try { obj = JSON.parse(raw); }
         catch(e){
           const m = raw.match(/\{[\s\S]*\}/);
           if (m){ obj = JSON.parse(m[0]); } else { throw e; }
         }
         if (!obj || !Array.isArray(obj.lines)) throw new Error("API returned invalid JSON structure");
+        
         const out = obj.lines.map(v => (typeof v === "string" ? v : String(v)));
-        if (out.length !== chunk.length) throw new Error(`API returned length mismatch: ${out.length} vs ${chunk.length}`);
-        return out;
-      }catch(err){
+        if (out.length !== chunk.length) {
+            // โยน error พร้อมข้อมูลเพื่อให้ catch block ด้านล่างจัดการได้
+            throw new Error(`API returned length mismatch: ${out.length} vs ${chunk.length}`);
+        }
+        return out; // --- สำเร็จ ---
+      } catch(err) {
+        
+        // --- START: DIVIDE AND CONQUER LOGIC ---
+        if (err.message.includes('length mismatch') && chunk.length > MIN_CHUNK_SIZE_FOR_SPLIT) {
+            log(`  - ⚠️ Mismatch. แบ่งชุดข้อมูลขนาด ${chunk.length} บรรทัดเพื่อลองใหม่...`);
+            const mid = Math.ceil(chunk.length / 2);
+            const firstHalf = chunk.slice(0, mid);
+            const secondHalf = chunk.slice(mid);
+            log(`  -   แบ่งเป็น: ${firstHalf.length} และ ${secondHalf.length} บรรทัด`);
+
+            // เรียกตัวเองซ้ำเพื่อแปลแต่ละครึ่ง
+            const translatedFirst = await translateChunk(model, firstHalf, src, tgt, retries);
+            const translatedSecond = await translateChunk(model, secondHalf, src, tgt, retries);
+            
+            // รวมผลลัพธ์แล้วส่งกลับทันที
+            return [...translatedFirst, ...translatedSecond];
+        }
+        // --- END: DIVIDE AND CONQUER LOGIC ---
+
         log(`  - Attempt ${attempt+1} failed: ${err.message}`);
         
         if (attempt === retries){
-          log(`  - All retries failed for this chunk.`);
+          log(`  - ⛔️ ล้มเหลวทุกครั้งสำหรับชุดข้อมูลนี้`);
           break;
         }
 
         let waitMs = 1000 * (attempt + 1);
-        let waitMessage = `  - Waiting for ${ (waitMs / 1000).toFixed(0) } second(s) for a standard retry...`;
+        let waitMessage = `  - ⏳ รอ ${ (waitMs / 1000).toFixed(0) } วินาที เพื่อลองใหม่...`;
 
         if (err.message && err.message.includes('[503')) {
           const backoffMinutes = [1, 2, 3, 4];
           if (attempt < backoffMinutes.length) {
             const waitMinutes = backoffMinutes[attempt];
             waitMs = waitMinutes * 60 * 1000;
-            waitMessage = `  - Model overloaded. Waiting for ${waitMinutes} minute(s) before retrying...`;
+            waitMessage = `  - ⏳ Model overloaded. รอ ${waitMinutes} นาที...`;
           } else {
-            waitMessage = `  - Model still overloaded. Performing a standard wait of ${ (waitMs / 1000).toFixed(0) } seconds...`;
+            waitMessage = `  - ⏳ Model ยังคง overloaded. รอ ${ (waitMs / 1000).toFixed(0) } วินาที...`;
           }
         }
         
@@ -605,8 +631,10 @@ ${JSON.stringify({lines: chunk})}`;
         await new Promise(r => setTimeout(r, waitMs));
       }
     }
+    // หากลูปจบลงโดยไม่สำเร็จ จะคืนค่า [Translation Failed]
     return chunk.map(() => `[Translation Failed]`);
   }
+  // ========== END: MODIFIED FUNCTION ==========
 
   async function translateFile(model, fileObj, src, tgt, batchSize, retries, delayMs){
     if (!fileObj.lines){
